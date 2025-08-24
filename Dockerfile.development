@@ -1,5 +1,4 @@
-FROM phusion/baseimage:0.9.19
-MAINTAINER Halisson Vitor
+FROM phusion/baseimage:0.10.1
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -9,7 +8,7 @@ ENV LANGUAGE en_US.UTF-8
 # Install os dependencies
 RUN apt-add-repository ppa:brightbox/ruby-ng
 RUN apt-get update
-RUN apt-get upgrade -y
+# RUN apt-get upgrade -y
 RUN apt-get install -y nodejs \
     ruby2.1 \
     ruby2.1-dev \
@@ -30,7 +29,7 @@ RUN apt-get install -y nodejs \
     imagemagick \
     wkhtmltopdf
 
-RUN gem install bundler
+RUN gem install bundler -v '~>1.17.3'
 
 ENV APP_HOME /share
 RUN mkdir $APP_HOME
