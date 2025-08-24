@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '4.0.3'
+gem 'rails', '~> 4.1.0'
 
 # Use mysql as the database for Active Record
 gem 'mysql2', '0.3.21'
@@ -51,7 +51,7 @@ end
 # gem 'debugger', group: [:development, :test]
 
 
-gem 'devise', '3.2.4'
+gem 'devise', '~> 3.5.10'
 
 gem "therubyracer"
 #gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
@@ -74,3 +74,4 @@ gem 'doorkeeper', '1.1.0'
 gem "omniauth-oauth2"#, '1.0.2'
 #gem 'omniauth-fluxapp' , :path => '/home/tp/Desktop/flux'
 gem 'omniauth-fluxapp' , :git  => 'https://github.com/stpnlr/omniauth-fluxapp.git'
+gem 'tzinfo-data'
