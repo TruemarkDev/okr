@@ -76,5 +76,5 @@ gem "omniauth-oauth2"#, '1.0.2'
 gem 'omniauth-fluxapp' , :git  => 'https://github.com/stpnlr/omniauth-fluxapp.git'
 gem 'tzinfo-data'
 gem 'rake', '< 13'
-gem 'concurrent-ruby', '~> 1.1.9'
+gem 'concurrent-ruby', '~> 1.0.5'
 
