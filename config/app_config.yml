@@ -1,0 +1,13 @@
+development:
+  google:
+    key:        'google access key'
+    secret:     'google secret'
+    scope:      "userinfo.email, userinfo.profile, http://gdata.youtube.com, https://www.googleapis.com/auth/youtube"
+    callback_url: "http://localhost:9292/users/auth/google_oauth2/callback"
+
+production:
+  google:
+    key:        <%= ENV.fetch("GOOGLE_KEY") %>
+    secret:     <%= ENV.fetch("GOOGLE_SECRET") %>
+    scope:      "userinfo.email, userinfo.profile, http://gdata.youtube.com, https://www.googleapis.com/auth/youtube"
+    callback_url: <%= ENV.fetch("GOOGLE_CALLBACK_URL") %>
