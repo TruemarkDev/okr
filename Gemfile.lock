@@ -38,6 +38,7 @@ GEM
     arel (5.0.1.20140414130214)
     base64 (0.3.0)
     bcrypt (3.1.20)
+    bigdecimal (3.2.3)
     builder (3.3.0)
     cancancan (1.17.0)
     carrierwave (1.0.0)
@@ -214,6 +215,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  bigdecimal (~> 3.2)
   cancancan (~> 1.7)
   carrierwave (= 1.0)
   cocoon
@@ -248,4 +250,4 @@ DEPENDENCIES
   will_paginate
 
 BUNDLED WITH
-   2.4.22
+   1.17.3

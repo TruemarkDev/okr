@@ -76,3 +76,5 @@ gem "omniauth-oauth2"#, '1.0.2'
 gem 'omniauth-fluxapp' , :git  => 'https://github.com/stpnlr/omniauth-fluxapp.git'
 gem 'tzinfo-data'
 
+
+gem "bigdecimal", "~> 3.2"
