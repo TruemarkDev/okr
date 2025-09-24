@@ -23,4 +23,4 @@
 /public/uploads
 /public/assets
 /db/schema.rb
-/config/app_config.yml
+#/config/app_config.yml
