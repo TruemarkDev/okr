@@ -37,7 +37,6 @@ GEM
       tzinfo (~> 1.1)
     arel (5.0.1.20140414130214)
     bcrypt (3.1.20)
-    bigdecimal (1.4.4)
     builder (3.3.0)
     cancancan (1.17.0)
     carrierwave (1.0.0)
@@ -103,8 +102,7 @@ GEM
     multi_json (1.15.0)
     multi_xml (0.6.0)
     multipart-post (1.2.0)
-    mysql2 (0.5.7)
-      bigdecimal
+    mysql2 (0.3.21)
     oauth2 (1.4.8)
       faraday (>= 0.8, < 3.0)
       jwt (>= 1.0, < 3.0)
@@ -214,7 +212,7 @@ DEPENDENCIES
   jquery-turbolinks (= 2.0.2)
   mini_magick
   multipart-post (< 2.0)
-  mysql2
+  mysql2 (= 0.3.21)
   omniauth-fluxapp!
   omniauth-google-oauth2
   omniauth-oauth2
