@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bd prime --hook-json",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(bundle install)",
+      "Bash(bundle exec rake test:*)",
+      "Bash(rake test:*)",
+      "Bash(rake db:migrate:status)",
+      "Bash(rake routes)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(openspec list:*)",
+      "Bash(openspec show:*)",
+      "Bash(openspec validate:*)",
+      "Bash(bd ready:*)",
+      "Bash(bd show:*)",
+      "Bash(bd list:*)",
+      "Bash(rg:*)",
+      "Bash(fd:*)"
+    ],
+    "deny": [
+      "Bash(rake db:drop:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

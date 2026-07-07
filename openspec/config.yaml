@@ -1,0 +1,44 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+context: |
+  fluxday — OKR + task/productivity tracker (Foradian, open-sourced 2016).
+  Legacy maintenance codebase: match existing idioms, do not modernize the stack.
+
+  Tech stack: Ruby 2.3.0, Rails 4.1, MySQL (mysql2 0.3.21), server-rendered ERB +
+  Foundation 5 + jQuery + Turbolinks + CoffeeScript. No SPA / no API-first frontend.
+  Tests: Minitest with fixtures under test/ (not RSpec).
+
+  Architecture: fat models + controllers (no service/policy/serializer layers).
+  Domain hierarchy: User -> Okr -> Objective -> KeyResult -> (task_key_results) ->
+  Task -> WorkLog. Task assignees are derived through key results. Soft deletes via
+  is_deleted (Task has a default_scope excluding deleted + ordering id desc).
+  Auth: Devise + omniauth-google-oauth2; authorization is CanCanCan in
+  app/models/ability.rb keyed off admin/manager/employee roles. fluxday is also a
+  Doorkeeper OAuth2 provider with a token API under app/controllers/api/v1/.
+
+  Conventions: Rails 4.1 idioms (before_filter, attr_accessible-era). Respect
+  soft-delete and role/visibility scoping (User#project_ids/team_ids/user_ids,
+  Task.searchable_for_user) instead of raw where/destroy. Gate new actions in
+  ability.rb. See CLAUDE.md for the full picture.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
