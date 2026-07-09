@@ -2,6 +2,7 @@ require 'test_helper'
 
 class TasksControllerTest < ActionController::TestCase
   setup do
+    sign_in users(:admin)
     @task = tasks(:one)
   end
 

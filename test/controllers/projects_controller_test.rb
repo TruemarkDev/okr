@@ -2,6 +2,7 @@ require 'test_helper'
 
 class ProjectsControllerTest < ActionController::TestCase
   setup do
+    sign_in users(:admin)
     @project = projects(:one)
   end
 
@@ -17,8 +18,10 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "should create project" do
+    # Project validates uniqueness of code; fixtures already use "MyString", so
+    # pass a unique code to exercise the create-success path.
     assert_difference('Project.count') do
-      post :create, project: { code: @project.code, description: @project.description, is_deleted: @project.is_deleted, name: @project.name }
+      post :create, project: { code: 'NEWCODE', description: @project.description, is_deleted: @project.is_deleted, name: @project.name }
     end
 
     assert_redirected_to project_path(assigns(:project))
@@ -35,12 +38,15 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "should update project" do
-    patch :update, id: @project, project: { code: @project.code, description: @project.description, is_deleted: @project.is_deleted, name: @project.name }
+    # Unique code so the uniqueness validation passes and update redirects.
+    patch :update, id: @project, project: { code: 'UPDATEDCODE', description: @project.description, is_deleted: @project.is_deleted, name: @project.name }
     assert_redirected_to project_path(assigns(:project))
   end
 
   test "should destroy project" do
-    assert_difference('Project.count', -1) do
+    # Project#destroy is overridden to soft-delete (sets is_deleted), so the row
+    # is not removed and Project.count is unchanged.
+    assert_no_difference('Project.count') do
       delete :destroy, id: @project
     end
 

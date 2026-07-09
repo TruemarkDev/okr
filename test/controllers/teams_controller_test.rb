@@ -2,6 +2,7 @@ require 'test_helper'
 
 class TeamsControllerTest < ActionController::TestCase
   setup do
+    sign_in users(:admin)
     @team = teams(:one)
   end
 

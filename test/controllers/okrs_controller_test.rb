@@ -2,6 +2,7 @@ require 'test_helper'
 
 class OkrsControllerTest < ActionController::TestCase
   setup do
+    sign_in users(:admin)
     @okr = okrs(:one)
   end
 
@@ -21,7 +22,7 @@ class OkrsControllerTest < ActionController::TestCase
       post :create, okr: { end_date: @okr.end_date, name: @okr.name, start_date: @okr.start_date, user_id: @okr.user_id }
     end
 
-    assert_redirected_to okr_path(assigns(:okr))
+    assert_redirected_to user_okr_path(assigns(:okr).user_id, assigns(:okr))
   end
 
   test "should show okr" do
@@ -36,7 +37,7 @@ class OkrsControllerTest < ActionController::TestCase
 
   test "should update okr" do
     patch :update, id: @okr, okr: { end_date: @okr.end_date, name: @okr.name, start_date: @okr.start_date, user_id: @okr.user_id }
-    assert_redirected_to okr_path(assigns(:okr))
+    assert_redirected_to user_okr_path(assigns(:okr).user_id, assigns(:okr))
   end
 
   test "should destroy okr" do

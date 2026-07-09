@@ -2,6 +2,7 @@ require 'test_helper'
 
 class WorkLogsControllerTest < ActionController::TestCase
   setup do
+    sign_in users(:admin)
     @work_log = work_logs(:one)
   end
 
@@ -17,8 +18,10 @@ class WorkLogsControllerTest < ActionController::TestCase
   end
 
   test "should create work_log" do
+    # WorkLog validates presence of task_id and that date is within the last 6
+    # days, so supply both for the create-success path.
     assert_difference('WorkLog.count') do
-      post :create, work_log: { end_time: @work_log.end_time, is_deleted: @work_log.is_deleted, name: @work_log.name, start_time: @work_log.start_time, task: @work_log.task, user_id: @work_log.user_id }
+      post :create, work_log: { end_time: @work_log.end_time, is_deleted: @work_log.is_deleted, name: @work_log.name, start_time: @work_log.start_time, task_id: @work_log.task_id, date: Date.today, user_id: @work_log.user_id }
     end
 
     assert_redirected_to work_log_path(assigns(:work_log))
@@ -44,6 +47,7 @@ class WorkLogsControllerTest < ActionController::TestCase
       delete :destroy, id: @work_log
     end
 
-    assert_redirected_to work_logs_path
+    # Signed-in admin is a manager, so destroy redirects to the worklogs report.
+    assert_redirected_to reports_worklogs_path
   end
 end

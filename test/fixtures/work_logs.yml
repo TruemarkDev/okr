@@ -1,9 +1,11 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
+  id: 1
   user_id: 1
   name: MyString
-  task: 1
+  task_id: 1
+  date: <%= Date.today %>
   start_time: 2014-03-20 12:49:32
   end_time: 2014-03-20 12:49:32
   is_deleted: false
