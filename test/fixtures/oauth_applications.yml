@@ -2,8 +2,12 @@
 
 one:
   name: MyString
+  uid: oauth-app-one-uid
+  secret: oauth-app-one-secret
   redirect_uri: MyText
 
 two:
   name: MyString
+  uid: oauth-app-two-uid
+  secret: oauth-app-two-secret
   redirect_uri: MyText

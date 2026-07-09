@@ -53,7 +53,6 @@ end
 
 gem 'devise', '~> 3.5.10'
 
-gem "therubyracer"
 #gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
 gem "foundation-rails",'5.2.1.0'
 gem 'hirb'
@@ -76,3 +75,9 @@ gem "omniauth-oauth2"#, '1.0.2'
 #gem 'omniauth-fluxapp' , :path => '/home/tp/Desktop/flux'
 gem 'omniauth-fluxapp' , :git  => 'https://github.com/stpnlr/omniauth-fluxapp.git'
 gem 'tzinfo-data'
+
+group :test do
+  # Ruby 2.3 ceiling: simplecov >= 0.18 requires Ruby >= 2.4/2.5, so pin to the
+  # last release supporting Ruby 2.3. Revisit once the Ruby ramp (§3) lands.
+  gem 'simplecov', '~> 0.17.1', require: false
+end

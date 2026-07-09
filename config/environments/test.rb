@@ -1,3 +1,5 @@
+AppConfig = YAML.load_file("#{::Rails.root}/config/app_config.yml")[::Rails.env]
+
 Fluxday::Application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 

@@ -2,10 +2,8 @@
 
 one:
   task_id: 1
-  assignee_type: MyString
-  assignee_id: 1
+  user_id: 1
 
 two:
   task_id: 1
-  assignee_type: MyString
-  assignee_id: 1
+  user_id: 1
