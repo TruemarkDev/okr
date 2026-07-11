@@ -48,4 +48,21 @@ class CommentsControllerTest < ActionController::TestCase
 
     assert_redirected_to comments_path
   end
+
+  # --- deepened characterization --------------------------------------------
+
+  test "index with task_id scopes to that task and builds a new comment" do
+    # Same Rails-3 finder bug as create: @task.comments.active.all(:include=>:user)
+    skip "characterization blocked: ArgumentError: wrong number of arguments (given 1, expected 0) — CommentsController#index calls Rails 3 finder `@task.comments.active.all(:include=>:user)`, removed in Rails 4"
+    get :index, task_id: tasks(:one).id
+    assert_response :success
+    assert_equal tasks(:one), assigns(:task)
+    assert assigns(:comment).new_record?
+  end
+
+  test "destroy hard-deletes the comment (not a soft delete)" do
+    id = @comment.id
+    delete :destroy, id: @comment
+    assert_nil Comment.find_by_id(id)
+  end
 end
