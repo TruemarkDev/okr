@@ -1,25 +1,73 @@
 source 'https://rubygems.org'
 
 # Dual-boot scaffold (FastRuby methodology): lets this app boot against either
-# this Gemfile (current: Rails 4.1) or Gemfile.next (next hop target) via
+# this Gemfile (current: Rails 4.2) or Gemfile.next (next hop target) via
 # BUNDLE_GEMFILE, and exposes NextRails.next?/current? for any code/config
 # that needs to branch during a version hop. Keep this outside any group so
 # the helpers are available everywhere. See https://github.com/fastruby/next_rails
 gem 'next_rails'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-# next hop (Task 3, roadmap §7 row 3): Rails 4.1 -> 4.2, smallest hop.
-gem 'rails', '~> 4.2.0'
+# next hop (Task 4, roadmap §7 row 4): Rails 4.2 -> 5.0.
+#
+# Known Rails 5.0 breaking changes to address as part of that hop (not yet
+# done here — this is just the version-pin scaffold step):
+#   - Models should inherit from a new `ApplicationRecord < ActiveRecord::Base`
+#     base class instead of `ActiveRecord::Base` directly.
+#   - `assigns`/`assert_template` (if any test uses them) move out of
+#     Action Controller into the `rails-controller-testing` gem.
+#   - Ruby >= 2.2.2 required (already satisfied by the pinned 2.3.0).
+#   - `belongs_to` associations become required-by-default. Decision for this
+#     hop: keep the app's existing optional-by-default behavior via
+#     `config.active_record.belongs_to_required_by_default = false` rather
+#     than auditing every `belongs_to` for an implicit new validation — revisit
+#     opting in as a deliberate follow-up, not a side effect of the version hop.
+#
+# NOTE: this pin alone does not currently resolve (`bundle lock` fails) and
+# there is deliberately no Gemfile.next.lock checked in for it yet. Unlike the
+# 4.1 -> 4.2 hop, several gems have hard railties/ruby ceilings that force real
+# upgrade decisions rather than a patch-level pin bump, e.g.:
+#   - devise 3.5.10 caps `railties < 5` — needs a devise 4.x migration
+#     (its own breaking changes to review, not just a version bump).
+#   - jquery-rails 3.1.4 and foundation-rails 5.2.1.0 (Foundation 5, per
+#     CLAUDE.md) cap `railties < 5.0` — need bumping in lockstep with whatever
+#     asset/UI-framework impact that carries.
+#   - ransack resolves to a version requiring Ruby >= 2.6 unless explicitly
+#     pinned to an older release compatible with the Ruby 2.3 ceiling.
+#   - omniauth-google-oauth2 needs pinning (as omniauth already is) to a line
+#     that still depends on omniauth ~> 1.x, or omniauth-oauth2/omniauth need
+#     to move together.
+#   - jquery-turbolinks needs a compatible bump alongside turbolinks.
+# Resolving these is Task 4's actual implementation work, not a scaffold-only
+# step — coffee-rails/sass-rails above were bumped as the two straightforward
+# non-controversial parts of that work; the rest is left for Task 4.
+gem 'rails', '~> 5.0.0'
 
 # Rails 4.2 extracted the class-level `respond_to`/`respond_with` API (used by
 # Api::V1::CredentialsController) out of Action Controller into this gem.
 gem 'responders', '~> 2.0'
 
+# Ruby 2.3 ceiling: nokogiri >= 1.11 requires Ruby >= 2.5, so pin to the last
+# release supporting Ruby 2.3. loofah/rails-html-sanitizer must be pinned in
+# lockstep — loofah >= 2.20 assumes the Nokogiri::HTML4/HTML5 split that only
+# exists on nokogiri >= 1.11, so left unpinned they resolve to versions that
+# raise `NameError: uninitialized constant Nokogiri::HTML4` on boot. Revisit
+# once the Ruby ramp (§3) lands.
+gem 'nokogiri', '~> 1.10.10'
+gem 'loofah', '~> 2.19.1'
+gem 'rails-html-sanitizer', '~> 1.4.4'
+
+# devise 3.5.10's omniauth integration hard-asserts `OmniAuth::VERSION =~ /^1\./`
+# (lib/devise/omniauth.rb) and raises on boot otherwise. Left unpinned,
+# omniauth-oauth2/omniauth-google-oauth2 resolve to a 2.x omniauth. Pin to the
+# same 1.x line the current Gemfile resolves to until devise is upgraded.
+gem 'omniauth', '~> 1.9'
+
 # Use mysql as the database for Active Record
 gem 'mysql2', '0.3.21'
 
 # Use SCSS for stylesheets
-gem 'sass-rails', '~> 4.0.0'
+gem 'sass-rails', '~> 5.0'
 
 # Use Uglifier as compressor for JavaScript assets
 gem 'execjs', '~> 2.7.0'
@@ -30,7 +78,7 @@ gem 'faraday', '< 0.10'
 
 
 # Use CoffeeScript for .js.coffee assets and views
-gem 'coffee-rails', '~> 4.0.0'
+gem 'coffee-rails', '~> 4.2.0'
 
 # See https://github.com/sstephenson/execjs#readme for more supported runtimes
 # gem 'therubyracer', platforms: :ruby
@@ -39,7 +87,14 @@ gem 'coffee-rails', '~> 4.0.0'
 gem 'jquery-rails', '3.1.4'
 
 # Turbolinks makes following links in your web application faster. Read more: https://github.com/rails/turbolinks
-gem 'turbolinks', '2.2.1'
+# turbolinks 2.2.1's XHRHeaders concern monkeypatches
+# `_compute_redirect_to_location(options)`, but Rails 4.2 changed that
+# private API to `_compute_redirect_to_location(request, options)`, which
+# blows up every `redirect_to` call with `ArgumentError: wrong number of
+# arguments`. Bump to the last classic (non-Turbolinks-5-rewrite) release,
+# which targets Rails 4.2's signature; the JS/behavior stays classic
+# Turbolinks 2.x.
+gem 'turbolinks', '~> 2.5.4'
 gem 'jquery-turbolinks', '2.0.2'
 
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder

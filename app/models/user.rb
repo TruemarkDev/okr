@@ -36,8 +36,8 @@ class User < ActiveRecord::Base
   scope :manager_user, -> {where("role in (?)",["admin","Manager"])}
 
   validates_presence_of :name, :nickname
-  validate :email, :presence => true, :uniqueness => true
-  validate :employee_code, :presence => true, :uniqueness => true
+  validates :email, :presence => true, :uniqueness => true
+  validates :employee_code, :presence => true, :uniqueness => true
   before_update :ensure_manager_exists
 
   #default_scope {where.not(is_deleted:true).order("name ASC")}

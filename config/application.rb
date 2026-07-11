@@ -10,20 +10,23 @@ Bundler.require(:default, Rails.env)
 module Fluxday
   class Application < Rails::Application
     # Dual-boot scaffold (see Gemfile / Gemfile.next): this app can boot against
-    # either the current Gemfile (Rails 4.1) or Gemfile.next (the next hop
-    # target) depending on BUNDLE_GEMFILE. Use `NextRails.next?` / `.current?`
-    # (from the `next_rails` gem) anywhere config or app code needs to branch
-    # between the two during a version hop, e.g.:
+    # either the current Gemfile (Rails 4.2, promoted from Gemfile.next by
+    # roadmap Task 3) or Gemfile.next (the next hop target, currently Rails
+    # 5.0 per Task 4) depending on BUNDLE_GEMFILE. Use `NextRails.next?` /
+    # `.current?` (from the `next_rails` gem) anywhere config or app code
+    # needs to branch between the two during a version hop, e.g.:
     #
     #   if NextRails.next?
-    #     # Rails 4.2-only config
+    #     # Rails 5.0-only config
     #   else
-    #     # Rails 4.1-only config
+    #     # Rails 4.2-only config
     #   end
     #
-    # No branch is needed yet for the 4.1 -> 4.2 hop (Task 3) — the `responders`
-    # gem in Gemfile.next covers the only behavior difference we rely on
+    # No branch was needed for the 4.1 -> 4.2 hop (Task 3) — the `responders`
+    # gem (now in this Gemfile) covered the only behavior difference relied on
     # (class-level `respond_to`/`respond_with` in Api::V1::CredentialsController).
+    # The 4.2 -> 5.0 hop (Task 4) will likely need a branch here for
+    # `config.active_record.belongs_to_required_by_default` (see Gemfile.next).
 
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers

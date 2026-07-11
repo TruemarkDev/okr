@@ -127,8 +127,10 @@ class TaskTest < ActiveSupport::TestCase
     expected = Task.unscoped.last.try(:tracker_id).to_i + 1
     t = build_task(tracker_id: nil)
     t.save!
-    # in-memory the callback leaves the raw integer it assigned...
-    assert_equal expected, t.tracker_id
+    # Rails 4.2 type-casts attribute values on assignment (not just on
+    # read/save as in 4.1), so the string column stringifies the integer the
+    # callback assigned immediately, in-memory.
+    assert_equal expected.to_s, t.tracker_id
     # ...and it persists to the string column as the stringified value
     assert_equal expected.to_s, t.reload.tracker_id
   end

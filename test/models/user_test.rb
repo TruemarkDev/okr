@@ -107,21 +107,24 @@ class UserTest < ActiveSupport::TestCase
     assert_includes u.errors[:email], "has already been taken"
   end
 
-  # QUIRK: `validate :employee_code, presence: true, uniqueness: true` uses
-  # `validate` (not `validates`), so the presence/uniqueness options are ignored.
-  # employee_code is therefore NOT actually validated.
-  test "employee_code presence is NOT enforced (validate vs validates quirk)" do
+  # Historically this was `validate :employee_code, presence: true, uniqueness:
+  # true` (using `validate` instead of `validates`), which silently no-opped
+  # the presence/uniqueness options under Rails 4.1. Rails 4.2 hard-errors on
+  # unknown `validate` options (ArgumentError), which surfaced the typo when
+  # dual-booting onto Gemfile.next (roadmap Task 3) — fixed to `validates` in
+  # app/models/user.rb so employee_code presence/uniqueness are now enforced
+  # for real.
+  test "employee_code presence is enforced" do
     u = build_user(employee_code: nil)
-    u.valid?
-    assert_empty u.errors[:employee_code]
+    refute u.valid?
+    assert_includes u.errors[:employee_code], "can't be blank"
   end
 
-  test "employee_code uniqueness is NOT enforced (validate vs validates quirk)" do
+  test "employee_code uniqueness is enforced" do
     existing = users(:admin)
     u = build_user(employee_code: existing.employee_code)
-    u.valid?
-    assert_empty u.errors[:employee_code]
-    assert u.save, "duplicate employee_code should still save"
+    refute u.valid?
+    assert_includes u.errors[:employee_code], "has already been taken"
   end
 
   test "password length is enforced by devise validatable" do
