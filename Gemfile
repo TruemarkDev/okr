@@ -1,14 +1,19 @@
 source 'https://rubygems.org'
 
-# Dual-boot scaffold (FastRuby methodology): this Gemfile now targets Rails
-# 8.0 / Ruby 3.3+ -- the roadmap's own target_stack (roadmap Task 9, the
-# FINAL version-hop task). Gemfile.next/Gemfile.next.lock are left in place
-# as the dual-boot mechanism but are NOT re-targeted to a further hop --
-# there is no next Rails/Ruby version queued. Task 12 (dual-CI verify +
-# handoff) decides whether to retire the dual-boot CI leg or keep it as a
-# forward-looking scaffold for whatever comes after 8.0/3.3.
-gem 'next_rails'
-
+# This Gemfile targets Rails 8.0 / Ruby 3.3+ -- the roadmap's own
+# target_stack, reached at Task 9 (the final version-hop task). The
+# `next_rails`-powered dual-boot scaffold (Gemfile.next/Gemfile.next.lock,
+# `NextRails.next?`/`.current?`, and the second CI leg) was RETIRED at Task
+# 12 (dual-CI verify + handoff): with the ladder fully climbed there is no
+# further Rails/Ruby hop queued, so a second Gemfile dual-booting against
+# itself had no remaining purpose -- and in practice it had already silently
+# drifted out of sync with this Gemfile during Task 11 (nobody remembered to
+# mirror a same-hop dependency bump into the unused second file), which is
+# exactly the failure mode a no-op scaffold invites. If/when a real next hop
+# starts (e.g. Rails 8.1+), resurrect the pattern the same way Task 2 did
+# originally: `cp Gemfile Gemfile.next`, `bundle lock` it, add `next_rails`
+# back, and restore the second CI matrix leg -- don't try to un-rot this one.
+#
 # Rails 7.0 -> 7.1 -> 7.2 -> 8.0 hop (Task 9, roadmap §7 row 9), ALONGSIDE a
 # Ruby 3.1 -> 3.3 bump. This is the LAST Rails/Ruby version hop -- the app
 # now runs the roadmap's target stack (Rails 8.0 / Ruby 3.3+).

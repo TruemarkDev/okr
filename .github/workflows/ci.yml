@@ -1,19 +1,51 @@
 name: CI
 
-# Dual-boot CI (FastRuby methodology, roadmap Task 2): every push/PR runs the
-# Minitest suite twice — once against the current Gemfile (Rails 8.0, promoted
-# from Gemfile.next by Task 9, the roadmap's final version-hop task; must stay
-# green) and once against Gemfile.next (left in place as the dual-boot
-# scaffold but NOT re-targeted to a further Rails/Ruby hop — there is no next
-# version queued past the roadmap's own target_stack of Rails 8.0/Ruby 3.3+;
-# Task 12, dual-CI verify + handoff, decides whether to retire this leg or
-# keep it as a forward-looking scaffold).
+# Single-leg CI (roadmap Task 12, dual-CI verify + handoff). This app ran a
+# dual-boot CI matrix (current Gemfile + Gemfile.next) throughout the
+# Rails 4.1 -> 8.0 climb (roadmap Task 2's scaffold), but that scaffold was
+# retired once Task 9 landed the ladder's final hop: with the app already on
+# the roadmap's own target_stack (Rails 8.0 / Ruby 3.3+) and no further
+# Rails/Ruby hop queued, a second Gemfile dual-booting against an identical
+# target had no remaining purpose. In practice it had already silently
+# drifted out of sync during Task 11 (a same-hop dependency bump landed in
+# Gemfile but nobody remembered to mirror it into the otherwise-unused
+# Gemfile.next) -- exactly the failure mode a no-op scaffold invites, and
+# the deciding factor for retiring rather than keeping it as a forward-
+# looking placeholder. See the Gemfile's own header comment for how to
+# resurrect the pattern (`cp Gemfile Gemfile.next`, re-add `next_rails`,
+# restore a matrix leg here) if/when a real next hop (e.g. Rails 8.1+)
+# actually starts.
 #
-# Both legs boot the app the same way local dev does: Dockerfile.development
-# (Ruby 3.3.11, built from source since brightbox's `ruby-ng` PPA does not
-# carry any Ruby 3.x package for any Ubuntu series — see that Dockerfile's own
-# comment; bumped from 3.1 as part of roadmap Task 9) against a MySQL 5.6
-# service, matching docker-compose.yml.
+# Boots the app the same way local dev does: Dockerfile.development (Ruby
+# 3.3.11, built from source since brightbox's `ruby-ng` PPA does not carry
+# any Ruby 3.x package for any Ubuntu series -- see that Dockerfile's own
+# comment) against a MySQL 5.6 service, matching docker-compose.yml.
+#
+# Task 12's dockerized dry-run verification (`docker build` + each step's
+# real `docker run` command, not just eyeballing this YAML) surfaced a
+# PRE-EXISTING bug, unrelated to the dual-boot retirement above: every step
+# below runs its own throwaway `docker run --rm`, so gems installed by the
+# "Bundle install" step land in `/usr/local/lib/ruby/gems` inside THAT
+# container's own writable layer -- not under `/share` (the only path bind-
+# mounted from the runner's checkout, which is the only thing that actually
+# persists across separate `docker run` invocations) -- and are discarded
+# the moment that container exits. The repo's `.bundle/config`
+# (`force_ruby_platform: true`) only gets copied into the image by
+# `Dockerfile.development`'s `ADD . $APP_HOME` AFTER its own build-time
+# `bundle install`, so that setting isn't in effect yet for the gems the
+# image bakes in -- meaning even the baked-in copy of `nokogiri`/`ffi`/
+# `mini_portile2` doesn't satisfy `bundle check` once `.bundle/config` (via
+# the bind mount) is active, and every later step's fresh container re-hits
+# `Bundler::GemNotFound` for exactly those three gems. Fixed by giving the
+# gem directory its own named Docker volume, shared across all three
+# `docker run` steps in this job (Docker seeds a brand-new named volume from
+# the image's own content on first mount, so the image's pre-baked gems
+# aren't lost -- only genuinely NEW installs, like the `force_ruby_platform`
+# re-resolve of those three gems, now persist forward instead of being
+# thrown away per step).
+
+env:
+  GEM_VOLUME: fluxday-ci-gems-${{ github.run_id }}
 
 on:
   push:
@@ -22,16 +54,8 @@ on:
 
 jobs:
   test:
-    name: test (${{ matrix.bundle_gemfile }})
+    name: test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - bundle_gemfile: Gemfile
-            allow_failure: false
-          - bundle_gemfile: Gemfile.next
-            allow_failure: true
 
     services:
       mysql:
@@ -47,26 +71,24 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
-    continue-on-error: ${{ matrix.allow_failure }}
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Build app image (Dockerfile.development)
         run: docker build -f Dockerfile.development -t fluxday-ci .
 
-      - name: Bundle install (${{ matrix.bundle_gemfile }})
+      - name: Bundle install
         run: |
           docker run --rm --network host \
             -v "${{ github.workspace }}:/share" -w /share \
-            -e BUNDLE_GEMFILE=${{ matrix.bundle_gemfile }} \
+            -v "${{ env.GEM_VOLUME }}:/usr/local/lib/ruby/gems/3.3.0" \
             fluxday-ci bash -lc "bundle install"
 
       - name: Prepare test database
         run: |
           docker run --rm --network host \
             -v "${{ github.workspace }}:/share" -w /share \
-            -e BUNDLE_GEMFILE=${{ matrix.bundle_gemfile }} \
+            -v "${{ env.GEM_VOLUME }}:/usr/local/lib/ruby/gems/3.3.0" \
             -e DB_HOST=127.0.0.1 -e DB_USER=root -e DB_PASS=fluxday -e DB_NAME=fluxday \
             fluxday-ci bash -lc "RAILS_ENV=test bundle exec rake db:create db:test:prepare"
 
@@ -74,6 +96,10 @@ jobs:
         run: |
           docker run --rm --network host \
             -v "${{ github.workspace }}:/share" -w /share \
-            -e BUNDLE_GEMFILE=${{ matrix.bundle_gemfile }} \
+            -v "${{ env.GEM_VOLUME }}:/usr/local/lib/ruby/gems/3.3.0" \
             -e DB_HOST=127.0.0.1 -e DB_USER=root -e DB_PASS=fluxday -e DB_NAME=fluxday \
             fluxday-ci bash -lc "bundle exec rake test"
+
+      - name: Clean up gem volume
+        if: always()
+        run: docker volume rm "${{ env.GEM_VOLUME }}" || true

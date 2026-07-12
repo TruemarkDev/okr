@@ -9,14 +9,13 @@ Bundler.require(:default, Rails.env)
 
 module Fluxday
   class Application < Rails::Application
-    # Dual-boot scaffold (see Gemfile / Gemfile.next): this app now runs the
-    # roadmap's target_stack, Rails 8.0 / Ruby 3.3+ (roadmap Task 9, the LAST
-    # version-hop task). `Gemfile.next`/`Gemfile.next.lock` are left in place
-    # as the dual-boot mechanism (via `next_rails`'s `NextRails.next?`/
-    # `.current?`) but are NOT re-targeted to a further Rails/Ruby hop --
-    # there is no next version queued. Task 12 (dual-CI verify + handoff)
-    # decides whether to retire the dual-boot CI leg now that the ladder is
-    # climbed, or keep the scaffold for whatever comes after 8.0/3.3.
+    # This app runs the roadmap's target_stack, Rails 8.0 / Ruby 3.3+
+    # (roadmap Task 9, the LAST version-hop task). The `next_rails`-powered
+    # dual-boot scaffold (`Gemfile.next`/`Gemfile.next.lock`,
+    # `NextRails.next?`/`.current?`, second CI leg) that carried this app
+    # through the whole ladder was RETIRED at Task 12 (dual-CI verify +
+    # handoff) -- see the Gemfile's own header comment for the rationale and
+    # how to resurrect it if/when a real next hop starts.
     #
     # History of every `NextRails.next?` branch this app needed during the
     # ladder (all now resolved/removed on promotion — no branch is live here

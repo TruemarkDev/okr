@@ -214,7 +214,6 @@ GEM
       timeout
     net-smtp (0.5.1)
       net-protocol
-    next_rails (1.6.0)
     nio4r (2.7.5)
     nokogiri (1.19.4)
       mini_portile2 (~> 2.8.2)
@@ -405,7 +404,6 @@ DEPENDENCIES
   mini_magick
   multipart-post (< 2.0)
   mysql2 (~> 0.5.7)
-  next_rails
   nokogiri (~> 1.19.4)
   omniauth (~> 1.9)
   omniauth-fluxapp!
