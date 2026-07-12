@@ -257,12 +257,20 @@ gem 'friendly_id', '~> 5.0.0'
 # `confidential` column migration (5.x hard-validates it) --
 # db/migrate/20260712000000_add_confidential_to_oauth_applications.rb.
 # Everything else 5.x adds (token/secret hashing, `previous_refresh_token`,
-# PKCE, scopes-by-grant-type, etc.) stays off/default, deferring the rest of
-# doorkeeper modernization to roadmap Task 10. Re-verified against Rails
-# 7.1/7.2/8.0 (Task 9) -- unchanged as a version, but its initializer
-# needed the `require Doorkeeper::Engine.root.join(...)` fix (see
-# config/initializers/doorkeeper.rb) once Rails 8.0 changed
+# PKCE, scopes-by-grant-type, etc.) stayed off/default through Task 8/9,
+# deferring the rest of doorkeeper modernization to roadmap Task 10.
+# Re-verified against Rails 7.1/7.2/8.0 (Task 9) -- unchanged as a version,
+# but its initializer needed the `require Doorkeeper::Engine.root.join(...)`
+# fix (see config/initializers/doorkeeper.rb) once Rails 8.0 changed
 # `add_autoload_paths_to_load_path`'s effective behavior.
+#
+# Task 10 revisited that deferred list: token/secret hashing (`hash_token_
+# secrets`/`hash_application_secrets`, with a plaintext fallback for existing
+# rows) is now enabled -- see config/initializers/doorkeeper.rb for the full
+# rationale plus the explicit non-adoption of PKCE/previous_refresh_token/
+# scopes-by-grant-type (no concrete need in fluxday's single confidential-
+# client usage) and the `confidential` column default audit (still correct
+# as `true` for every application -- see the migration file's comment).
 gem 'doorkeeper', '~> 5.1.2'
 
 gem "omniauth-oauth2"#, '1.0.2'

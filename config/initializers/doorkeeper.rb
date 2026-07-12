@@ -57,6 +57,61 @@ Doorkeeper.configure do
   # Issue access tokens with refresh token (disabled by default)
   # use_refresh_token
 
+  # roadmap Task 10 (doorkeeper 5.x modernization surface, deliberately left
+  # off during Task 8/9's forced 4.4.3 -> 5.1.2 bump to keep those hops
+  # minimal): hash access/refresh tokens and application secrets at rest
+  # instead of storing them in plaintext. This is transparent to every OAuth
+  # client (fluxday's own `Api::V1::CredentialsController`/omniauth-fluxapp
+  # integration and any registered `OauthApplication`) -- hashing happens in
+  # the same `oauth_applications`/`oauth_access_tokens`/`oauth_access_grants`
+  # string columns via Doorkeeper's own SHA256 SecretStoring/Hashing
+  # strategies, no schema migration required (confirmed against
+  # doorkeeper-5.1.2's `lib/doorkeeper/secret_storing/*`). `reuse_access_token`
+  # is not enabled here (and can't be combined with `hash_token_secrets`
+  # anyway), so this doesn't interact with it.
+  #
+  # A plaintext fallback is required alongside this: fluxday already has real
+  # `oauth_applications` rows (and any live access/refresh tokens) with
+  # plaintext secrets persisted before this change. Without it, every
+  # existing client secret and outstanding token would stop validating the
+  # moment this deploys. New applications/tokens issued after this change are
+  # hashed going in; existing plaintext rows keep working via `fallback:
+  # :plain` and are transparently upgraded to hashed values the next time
+  # their secret is rotated/token is reissued.
+  #
+  # Note: doorkeeper 5.1.2's `hash_token_secrets`/`hash_application_secrets`
+  # take the fallback as a keyword argument here -- the standalone
+  # `fallback_to_plain_secrets` directive doesn't exist until a later 5.x
+  # release, so it can't be used on this pinned version.
+  hash_token_secrets fallback: :plain
+  hash_application_secrets fallback: :plain
+
+  # roadmap Task 10: the rest of doorkeeper 5.x's modernization surface was
+  # assessed and deliberately left off/default -- no concrete need found in
+  # fluxday's actual usage (itself an OAuth2 *provider* for internally
+  # registered `OauthApplication`/`Api::V1::CredentialsController` clients,
+  # and separately an OAuth2 *client* of an external fluxapp via
+  # omniauth-fluxapp/omniauth-oauth2 -- neither is a public/mobile client,
+  # and only one grant flow is actually exercised):
+  #
+  # - PKCE: not adopted. PKCE exists to protect public clients that can't
+  #   hold a secret (native/mobile/SPA). Every registered `OauthApplication`
+  #   here is a confidential, server-registered client (see the
+  #   `confidential` column default below) -- no public client exists to
+  #   protect.
+  # - previous_refresh_token: not adopted. `use_refresh_token` itself is
+  #   still commented out/disabled above (unchanged from Task 8/9) -- there
+  #   is no refresh-token flow in play at all, so rotation-without-
+  #   invalidation has nothing to apply to.
+  # - scopes_by_grant_type: not adopted. This app defines no
+  #   default_scopes/optional_scopes (both still commented out below) and
+  #   doesn't customize `grant_flows`, so there's only the doorkeeper
+  #   default flow set with no per-grant-type scope distinction to make.
+  #
+  # If any of the above becomes true (a public client is registered, refresh
+  # tokens get turned on, or multiple grant types with different scope needs
+  # appear), revisit this list -- don't adopt any of them speculatively.
+
   # Provide support for an owner to be assigned to each registered application (disabled by default)
   # Optional parameter :confirmation => true (default false) if you want to enforce ownership of
   # a registered application
