@@ -1,17 +1,19 @@
 name: CI
 
 # Dual-boot CI (FastRuby methodology, roadmap Task 2): every push/PR runs the
-# Minitest suite twice — once against the current Gemfile (Rails 7.0, promoted
-# from Gemfile.next by Task 8; must stay green) and once against Gemfile.next
-# (the in-progress next hop target, Rails 7.1 -> 7.2 -> 8.0 per Task 9 — not
-# yet started and allowed to fail until that hop lands).
+# Minitest suite twice — once against the current Gemfile (Rails 8.0, promoted
+# from Gemfile.next by Task 9, the roadmap's final version-hop task; must stay
+# green) and once against Gemfile.next (left in place as the dual-boot
+# scaffold but NOT re-targeted to a further Rails/Ruby hop — there is no next
+# version queued past the roadmap's own target_stack of Rails 8.0/Ruby 3.3+;
+# Task 12, dual-CI verify + handoff, decides whether to retire this leg or
+# keep it as a forward-looking scaffold).
 #
 # Both legs boot the app the same way local dev does: Dockerfile.development
-# (Ruby 3.1.6, built from source since brightbox's `ruby-ng` PPA does not
+# (Ruby 3.3.11, built from source since brightbox's `ruby-ng` PPA does not
 # carry any Ruby 3.x package for any Ubuntu series — see that Dockerfile's own
-# comment; bumped from 2.7 as part of roadmap Task 8. Task 9 is expected to
-# bump this again, to Ruby 3.3, alongside its Rails 7.1 -> 8.0 hop) against a
-# MySQL 5.6 service, matching docker-compose.yml.
+# comment; bumped from 3.1 as part of roadmap Task 9) against a MySQL 5.6
+# service, matching docker-compose.yml.
 
 on:
   push:

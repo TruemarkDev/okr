@@ -44,6 +44,17 @@ class Date
   include DateExtenstions
 end
 
-class Fixnum
+# Ruby 3.2 removed the `Fixnum` constant entirely (it had been a deprecated
+# alias for `Integer` since Ruby 2.4's Fixnum/Bignum unification). Before this
+# hop, `class Fixnum; include IntExtenstions; end` reopened that alias and
+# actually patched `Integer` (so `5.to_duration` worked); on Ruby 3.2+ the
+# bare constant lookup fails to find `Fixnum` and this instead silently
+# defines a brand-new, unrelated top-level `Fixnum` class -- `IntExtenstions`
+# never reaches real `Integer` instances, and every `<int>.to_duration` call
+# in ReportsController/views blows up with `NoMethodError` (roadmap Task 9's
+# Ruby 3.1 -> 3.3 bump). Reopen `Integer` directly instead -- same effective
+# behavior on every Ruby version back to 2.4, just not reliant on the removed
+# alias.
+class Integer
   include IntExtenstions
 end

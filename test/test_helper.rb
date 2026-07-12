@@ -7,7 +7,14 @@ require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 
 class ActiveSupport::TestCase
-  ActiveRecord::Migration.check_pending!
+  # `ActiveRecord::Migration.check_pending!` (a public class method) was
+  # removed by Rails 7.1/8.0 -- the pending-migration check it did is now
+  # handled automatically by `rails/testing/maintain_test_schema` (loaded via
+  # `rails/test_help`, required above) instead. Guard the call so this file
+  # keeps working unmodified on both the current Gemfile (Rails 7.0, where
+  # the method still exists) and Gemfile.next (Rails 8.0, roadmap Task 9)
+  # during the dual-boot window.
+  ActiveRecord::Migration.check_pending! if ActiveRecord::Migration.respond_to?(:check_pending!)
 
   # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
   #

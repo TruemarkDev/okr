@@ -1,97 +1,75 @@
 source 'https://rubygems.org'
 
-# Dual-boot scaffold (FastRuby methodology): lets this app boot against either
-# this Gemfile (current: Rails 7.0, promoted from Gemfile.next by Task 8) or
-# Gemfile.next (next hop target, Rails 7.1 -> 7.2 -> 8.0 per Task 9) via
-# BUNDLE_GEMFILE, and exposes NextRails.next?/current? for any code/config
-# that needs to branch during a version hop. Keep this outside any group so
-# the helpers are available everywhere. See https://github.com/fastruby/next_rails
+# Dual-boot scaffold (FastRuby methodology): this Gemfile now targets Rails
+# 8.0 / Ruby 3.3+ -- the roadmap's own target_stack (roadmap Task 9, the
+# FINAL version-hop task). Gemfile.next/Gemfile.next.lock are left in place
+# as the dual-boot mechanism but are NOT re-targeted to a further hop --
+# there is no next Rails/Ruby version queued. Task 12 (dual-CI verify +
+# handoff) decides whether to retire the dual-boot CI leg or keep it as a
+# forward-looking scaffold for whatever comes after 8.0/3.3.
 gem 'next_rails'
 
-# Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-# NEXT hop (Task 9, roadmap §7 row 9): Rails 7.0 -> 7.1 -> 7.2 -> 8.0, the
-# roadmap groups all three minors as one hop ("mostly mechanical if 7.0 is
-# clean"), ALONGSIDE a Ruby 3.1 -> 3.3 bump. NOT started — this is just the
-# version-pin scaffold step, mirroring what Task 7's agent left for Task 8.
-# Known changes to account for (from the official 7.1/7.2/8.0 release
-# notes/upgrade guides), in rough priority order:
+# Rails 7.0 -> 7.1 -> 7.2 -> 8.0 hop (Task 9, roadmap §7 row 9), ALONGSIDE a
+# Ruby 3.1 -> 3.3 bump. This is the LAST Rails/Ruby version hop -- the app
+# now runs the roadmap's target stack (Rails 8.0 / Ruby 3.3+).
 #
-#   - **Ruby floor**: Rails 7.1 requires Ruby >= 2.7, Rails 7.2 requires Ruby
-#     >= 3.1, Rails 8.0 requires Ruby >= 3.2 -- so Ruby itself isn't the
-#     forcing function until 8.0, but the roadmap's own ramp bumps Ruby to
-#     3.3 in this SAME hop. Given Task 8's own experience (brightbox's
-#     `ruby-ng` PPA does NOT carry ANY Ruby 3.x package, for any Ubuntu
-#     series -- confirmed against the real Packages.gz, not assumed), this
-#     hop should again build Ruby from source in `Dockerfile.development`
-#     (bump the `ruby-3.1.6.tar.gz` URL/version to the 3.3.x line, e.g.
-#     3.3.6) rather than re-attempt an apt-based install.
-#   - **`config.load_defaults` ramp**: walk 7.1, 7.2, AND 8.0 one at a time
-#     (three stock `new_framework_defaults_*.rb` templates to fetch and
-#     audit, the same way Tasks 6/7/8 did for 6.0/6.1/7.0) rather than
-#     jumping straight to `config.load_defaults 8.0`. Notable individual
-#     toggles to expect (verify against the real templates when this hop
-#     starts, don't hand-write them):
-#       * 7.1: `config.active_record.postgresql_adapter_decode_dates` --
-#         N/A, this app uses `mysql2`, not `pg`.
-#       * 7.1: `concurrent-ruby` no longer needs the `< 1.3.5` pin from
-#         Tasks 6/7/8 once `activesupport` requires 'logger' itself (this
-#         was the whole reason for that pin) -- verify and drop it.
-#       * 7.1: composite primary keys, `ActiveRecord::Base#normalizes` --
-#         opt-in only, not forced.
-#       * 7.2: Progressive-Web-App defaults, Rubocop/Brakeman scaffolding
-#         for NEW apps only -- N/A, this isn't a new app.
-#       * 8.0: Propshaft becomes the *new-app* default asset pipeline, but
-#         (same reasoning as Task 8's Sprockets decision) does NOT force
-#         existing Sprockets apps to migrate -- keep Sprockets unless a
-#         concrete incompatibility surfaces, consistent with this app's
-#         maintenance-not-greenfield posture (CLAUDE.md).
-#       * 8.0: Solid Queue / Solid Cache / Solid Cable ship as the new-app
-#         defaults for job queue / cache / Action Cable adapters, but
-#         they're additive/optional -- this app has no ActiveJob queue
-#         backend or Action Cable usage to migrate, so no adoption forced.
-#       * 8.0: new `bin/rails generate authentication` scaffolding -- N/A,
-#         this app already has Devise; don't replace it.
-#       * 8.0: Kamal 2 deployment scaffolding -- N/A, no deployment tooling
-#         change in scope for this hop.
-#   - **Gem cluster**: re-verify devise/cancancan/doorkeeper/ransack/mysql2/
-#     nokogiri-family/omniauth-google-oauth2/wicked_pdf/carrierwave/faraday
-#     all still resolve under Rails 7.1/7.2/8.0's `railties`/`activesupport`
-#     bumps AND under Ruby 3.3 (same two-simultaneous-floors pattern as
-#     Task 8) -- confirm with `bundle lock` per minor rather than assuming.
-#     `ransack` in particular is already capped `~> 4.3.0` specifically
-#     because `~> 4.4` raises its own `activesupport` floor to `>= 7.1`/
-#     `>= 7.2` (see this Gemfile's own comment below) -- this hop is exactly
-#     where that cap should be revisited/lifted.
-#   - `ffi`/`nokogiri`/`loofah`/`rails-html-sanitizer` pins: re-verify each
-#     one's floor/ceiling reasoning under Ruby 3.3 -- Task 8 found no
-#     forcing function to bump them at Ruby 3.1, but that doesn't mean the
-#     same holds at 3.3; don't assume, re-check via `bundle lock`.
-#   - `simplecov` pin (`~> 0.22.0`): capped because `simplecov` 1.0.0 raises
-#     its own Ruby floor to `>= 3.2` -- this hop's Ruby 3.3 bump clears that
-#     floor, so revisit whether 1.0.0 (or newer) is now preferable.
-#
-# Version pin below targets the 7.1.x line as the scaffold placeholder (not
-# yet bundle-locked/verified — that's this hop's own work, the same way
-# Task 7 left `~> 7.0` unverified for Task 8 to actually resolve). Note:
-# like Task 8 discovered, a bare `~> 7.1` ceiling is a no-op past the first
-# digit after the dot (`~> 7.1` = `>= 7.1, < 8.0`) -- pin to `~> 7.1.0` (or
-# whichever exact minor is being landed first) if this hop wants to land
-# 7.1 before climbing further, rather than jumping straight to 8.0.
-gem 'rails', '~> 7.1'
+#   - **Ruby 3.1 -> 3.3 bump**: landed as a from-source Ruby 3.3.11 build in
+#     `Dockerfile.development` (same from-source approach as Task 8's 3.1.6,
+#     since brightbox's PPA still doesn't carry any Ruby 3.x package).
+#   - **`config.load_defaults` ramp**: walked 7.1, 7.2, and 8.0 one at a time
+#     via their real stock `new_framework_defaults_*.rb` templates. Nothing
+#     in this app's code needed to opt into any of the individually-gated
+#     behavior changes; all pinned to pre-8.0 defaults except what Task 8
+#     already turned on (`raise_on_open_redirects`).
+#   - **Asset pipeline**: KEPT Sprockets. Rails 8's new-app default is
+#     Propshaft, but Sprockets 4.x remains fully supported and this is a
+#     maintenance upgrade, not a rebuild (CLAUDE.md's "match the surrounding
+#     style" doctrine, same call as Task 8).
+#   - **Solid Queue / Solid Cache / Solid Cable**: NOT adopted. This app has
+#     no ActiveJob queue backend or Action Cable usage to migrate -- they're
+#     additive-only new-app defaults, not forced on existing apps.
+#   - **Turbolinks**: KEPT classic 2.5.4, same arity-flexible monkeypatch
+#     from Task 3 still works unmodified.
+#   - **Gem cluster**: devise 4.9.4 -> 4.9.4 (unchanged, already the ceiling
+#     needed), cancancan 3.6 -> 3.6 (unchanged), doorkeeper 5.1.2 -> 5.1.2
+#     (unchanged; the doorkeeper *initializer* itself needed a fix -- its
+#     `require 'redirect_uri_validator'` bare-$LOAD_PATH lookup from Task 8
+#     stopped resolving under Rails 8.0, re-fixed with an absolute
+#     `Doorkeeper::Engine.root`-based require -- see the initializer's own
+#     comment), ransack 4.3.0 -> 4.4.1 (its `~> 4.4` `activesupport` floor
+#     of `>= 7.1` finally clears once Rails is 7.1+), nokogiri/loofah/
+#     rails-html-sanitizer bumped to their latest current releases now that
+#     their Ruby-floor-only pins no longer apply (Ruby is 3.3), `ffi` bumped
+#     to latest for the same reason, `concurrent-ruby < 1.3.5` pin DROPPED
+#     (activesupport 8.0 requires 'logger' itself, the actual upstream fix
+#     that pin was working around).
+#   - **simplecov**: tried the 1.0.0 line (now unblocked since Ruby clears
+#     its >= 3.2 floor), but REVERTED to 0.22.0 -- 1.0.0's stock "rails"
+#     profile changed its config/db path-filtering AND file-discovery
+#     semantics, which inflates the reported denominator (1573 -> 1908
+#     tracked lines) with the exact same 1114 covered lines, making the
+#     percentage read as a regression (70.82% -> 58.38%) when nothing about
+#     actual coverage changed. Kept 0.22.0 to preserve a hop-to-hop
+#     comparable coverage-gate percentage rather than trade a
+#     well-understood baseline for a confusing one-line "modernize while
+#     we're here" change.
+gem 'rails', '~> 8.0.0'
 
 # Rails 4.2 extracted the class-level `respond_to`/`respond_with` API (used by
 # Api::V1::CredentialsController) out of Action Controller into this gem.
 # responders 2.x caps `railties < 5`; bumped to 3.x in the 6.0 hop.
 gem 'responders', '~> 3.0'
 
-# Revisited these pins now that Ruby is actually 3.1 (Task 8): 1.15.7/
-# 2.25.1/1.7.0 were capped only because Ruby was still 2.7 when they were
-# set (Task 6/7); their *floor*, not ceiling, was the constraint, so all
-# three keep resolving and passing the full suite unchanged under Ruby 3.1
-# -- confirmed via `bundle lock` this hop. No forcing function to bump
-# further (no CVE/incompatibility hit), so left as-is. Re-verify again this
-# hop under Ruby 3.3.
-gem 'nokogiri', '~> 1.15.7'
+# Ruby-floor-only pins (Task 6/7/8): 1.15.7/2.25.1/1.7.0 were capped only
+# because Ruby was still 2.7 when set. Now that Ruby is 3.3 (Task 9), bumped
+# all three to their latest current releases (nokogiri 1.15.7 -> 1.19.4;
+# loofah/rails-html-sanitizer already at latest) via `bundle lock --update`.
+# No forcing function beyond "the Ruby-floor reason for the old pin is gone" --
+# this app's own code never calls Nokogiri/Loofah/rails-html-sanitizer APIs
+# directly (transitive HTML-sanitization deps of actionview/rails-dom-testing),
+# so the full characterization suite staying green is the only verification
+# surface, and it does.
+gem 'nokogiri', '~> 1.19.4'
 gem 'loofah', '~> 2.25.1'
 gem 'rails-html-sanitizer', '~> 1.7.0'
 
@@ -132,23 +110,19 @@ gem 'multipart-post', '< 2.0'
 # within oauth2's `< 3.0` cap.
 gem 'faraday', '~> 1.10'
 
-# Transitive dep of sass-listen (via sass-rails' watcher chain). Pinned in
-# the Rails 6.0 hop (Task 6) to keep bundler's resolver off a
-# `x86_64-linux-musl` platform build of 1.17.x whose `required_ruby_version`
-# is `>= 3.0` — now that Ruby actually IS >= 3.0 (Task 8's bump to 3.1),
-# that specific platform-build concern no longer applies, but 1.15.5 still
-# resolves fine and the full suite is green under it, so left unchanged
-# rather than churning for no behavior difference. Re-verify under Ruby 3.3
-# this hop.
-gem 'ffi', '~> 1.15.5'
+# Transitive dep of sass-listen (via sass-rails' watcher chain). Bumped to
+# the latest release (1.17.4) this hop (Task 9) -- the Ruby-floor-only
+# platform-build concern that motivated the earlier 1.15.5 pin no longer
+# applies now that Ruby is 3.3; `bundle lock --update ffi` resolves cleanly
+# and the full suite stays green.
+gem 'ffi', '~> 1.17.4'
 
 # concurrent-ruby 1.3.5+ stopped requiring Ruby's stdlib `logger` before
-# referencing the bare `Logger` constant, which breaks
-# `active_support/logger_thread_safe_level.rb` on any Rails release that
-# doesn't require 'logger' itself. Rails 7.1 is where that fix lands
-# upstream (per Task 8's own research) -- THIS hop should verify whether the
-# pin can finally be dropped once `rails` moves past 7.0.
-gem 'concurrent-ruby', '< 1.3.5'
+# referencing the bare `Logger` constant, which broke `active_support/
+# logger_thread_safe_level.rb` on any Rails release that didn't require
+# 'logger' itself. DROPPED this hop (Task 9): activesupport 8.0.5 requires
+# 'logger' itself (the actual upstream fix), so the pin is no longer needed --
+# confirmed via `bundle lock` and the full suite passing unpinned.
 
 
 # Use CoffeeScript for .js.coffee assets and views
@@ -169,10 +143,8 @@ gem 'jquery-rails', '~> 4.3.0'
 # blows up every `redirect_to` call with `ArgumentError: wrong number of
 # arguments`. Bump to the last classic (non-Turbolinks-5-rewrite) release,
 # which targets Rails 4.2's signature; the JS/behavior stays classic
-# Turbolinks 2.x. Confirmed (Task 8) this same monkeypatch's splatted
-# `*args` signature still works unmodified under Rails 7.0 -- re-verify
-# again under 7.1/7.2/8.0 this hop; keep classic Turbolinks unless a
-# concrete break surfaces (same "don't modernize as a side effect" posture).
+# Turbolinks 2.x. Confirmed (Tasks 8/9) this same monkeypatch's splatted
+# `*args` signature still works unmodified through Rails 8.0.
 gem 'turbolinks', '~> 2.5.4'
 gem 'jquery-turbolinks', '2.0.2'
 
@@ -181,10 +153,26 @@ gem 'jquery-turbolinks', '2.0.2'
 # `Mime::JSON` constant directly, which Rails 5 removed in favor of
 # `Mime[:json]` (the whole `Mime::TYPE` constant-per-type scheme was
 # replaced with `Mime::Type.lookup_by_extension`) — boot fails with
-# `NameError: uninitialized constant Mime::JSON` under Rails 5.2. Bump to the
-# last release still supporting Ruby 2.4 (2.14+ raises the Ruby floor to
-# >= 3.0).
-gem 'jbuilder', '~> 2.11.5'
+# `NameError: uninitialized constant Mime::JSON` under Rails 5.2. Bumped to
+# 2.11.5 for that hop (Task 5), then to 2.15.1 in Task 9 (Rails 8.0 removed
+# the ancient `active_support/basic_object`/`proxy_object` compat shim
+# 2.11.5's LoadError-rescue path depended on). This app's ~20
+# `*.json.jbuilder` views use the plain `json.<attr>`/`json.array!` DSL,
+# unchanged across the 2.11 -> 2.15 jump.
+gem 'jbuilder', '~> 2.15.1'
+
+# The `:doc` group (`sdoc 0.4.0`, for `rake doc:rails`) was dropped in the
+# Ruby 2.7 -> 3.1 bump (roadmap Task 8): `sdoc 0.4.0` pins `json ~> 1.8`
+# (resolved 1.8.6, a native-extension gem from 2014), which is incompatible
+# with Ruby 3.1's stdlib `json` (2.6.1) API — `JSON.parse`'s C extension
+# takes a different arity, so anything that touches JSON at runtime
+# (Doorkeeper's initializer, SimpleCov's result writer) blew up with
+# `ArgumentError: wrong number of arguments`. Nothing in this app's test
+# suite or runtime code calls `rake doc:rails`; removing the group lets
+# Bundler resolve to Ruby's own bundled `json` instead of pinning an
+# incompatible ancient one. Re-add `sdoc` (a current release) as a
+# stand-alone `group :development` gem later if API-doc generation is
+# actually needed.
 
 # Use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.1.2'
@@ -209,8 +197,8 @@ gem 'jbuilder', '~> 2.11.5'
 # `if ActiveSupport::Dependencies.respond_to?(:reference)`. Bumped to the
 # last 4.x release (5.0.x changes enough -- new
 # `Devise::Test::IntegrationHelpers` defaults, dropped Rails < 6.1 support
-# -- that a same-major bump is the lower-risk choice here). Re-verify
-# against 7.1/7.2/8.0 this hop.
+# -- that a same-major bump is the lower-risk choice here). Re-verified
+# against Rails 7.1/7.2/8.0 (Task 9) -- unchanged, still resolves and passes.
 gem 'devise', '~> 4.9.4'
 
 #gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
@@ -237,8 +225,8 @@ gem "select2-rails", '3.5.11'
 # instead of rendering the expected redirect+alert. Fixed upstream at
 # 3.1.0; bumped to latest 3.x. This app's
 # `can`/`cannot`/`alias_action`/block-condition DSL in
-# `app/models/ability.rb` is unchanged across the 1.x -> 3.x jump. Re-verify
-# against Rails 7.1/7.2/8.0 this hop.
+# `app/models/ability.rb` is unchanged across the 1.x -> 3.x jump. Re-verified
+# against Rails 7.1/7.2/8.0 (Task 9) -- unchanged, still resolves and passes.
 gem 'cancancan', '~> 3.6'
 # Unpinned, omniauth-google-oauth2 resolves to a 1.2.x release that both
 # needs Ruby >= 2.5 (above this hop's Ruby 2.4 ceiling) and depends on
@@ -246,14 +234,13 @@ gem 'cancancan', '~> 3.6'
 # itself needed for this app's still-1.x-shaped omniauth strategies). Pin to
 # 0.8.2, the last release whose own `omniauth` dependency is `~> 1.1`.
 gem 'omniauth-google-oauth2', '0.8.2'
-# Capped `~> 4.3.0` in Task 8 specifically because `~> 4.4` raises its own
-# `activesupport` floor to `>= 7.1`/`>= 7.2` -- THIS hop (Task 9, landing
-# 7.1+) is exactly where that floor is cleared, so revisit/lift this cap and
-# move to the latest 4.x release. Re-run the `home_controller.rb`
-# `.ransack(...)` call and `Task#ransackable_attributes`/
-# `#ransackable_associations` allowlists (added in Task 8) against whatever
-# version lands.
-gem 'ransack', '~> 4.3.0'
+# Was capped `~> 4.3.0` in Task 8 specifically because `~> 4.4` raises its
+# own `activesupport` floor to `>= 7.1`/`>= 7.2`. This hop (Task 9, landing
+# Rails 8.0) clears that floor, so lifted to the latest 4.x release (4.4.1).
+# `home_controller.rb`'s `.ransack(...)` call and `Task#ransackable_attributes`/
+# `#ransackable_associations` allowlists (added in Task 8) re-verified against
+# 4.4.1 -- no allowlist/API changes between 4.3 and 4.4, full suite green.
+gem 'ransack', '~> 4.4.1'
 gem "will_paginate"
 gem "cocoon"
 # wicked_pdf 0.9.10's PdfHelper module uses `alias_method_chain`, which Rails
@@ -266,14 +253,16 @@ gem 'friendly_id', '~> 5.0.0'
 # doorkeeper 4.4.3 (last 4.x release) did NOT survive the Ruby 2.7 -> 3.1
 # bump (roadmap Task 8) -- fixed by bumping to 5.1.2, the earliest 5.x patch
 # whose `belongs_to` calls use keyword-literal syntax instead of a
-# positionally-passed Hash (a Ruby 3.0+ kwargs-separation break). Needs the
+# positionally-passed Hash (a Ruby 3.0+ kwargs-separation break). Needed the
 # `confidential` column migration (5.x hard-validates it) --
 # db/migrate/20260712000000_add_confidential_to_oauth_applications.rb.
 # Everything else 5.x adds (token/secret hashing, `previous_refresh_token`,
 # PKCE, scopes-by-grant-type, etc.) stays off/default, deferring the rest of
-# doorkeeper modernization to roadmap Task 10. Re-verify 5.1.2 (or consider
-# a further 5.x bump, since this hop is a good checkpoint) against Rails
-# 7.1/7.2/8.0.
+# doorkeeper modernization to roadmap Task 10. Re-verified against Rails
+# 7.1/7.2/8.0 (Task 9) -- unchanged as a version, but its initializer
+# needed the `require Doorkeeper::Engine.root.join(...)` fix (see
+# config/initializers/doorkeeper.rb) once Rails 8.0 changed
+# `add_autoload_paths_to_load_path`'s effective behavior.
 gem 'doorkeeper', '~> 5.1.2'
 
 gem "omniauth-oauth2"#, '1.0.2'
@@ -283,9 +272,19 @@ gem 'tzinfo-data'
 
 group :test do
   # simplecov 1.0.0 raises the Ruby floor to >= 3.2 -- this hop's Ruby 3.3
-  # bump (roadmap Task 9) clears that floor for the first time; revisit
-  # whether 1.0.0 (or a newer release) is now preferable to the 0.22.x line
-  # pinned since Task 6.
+  # bump (roadmap Task 9) clears that floor for the first time, so it's no
+  # longer *blocked*. Tried it anyway: 1.0.0's stock "rails" profile changed
+  # its config/db filtering from `add_filter %r{^/config/}` to
+  # `skip %r{\Aconfig/}` (root-relative vs. absolute-path regexes) AND its
+  # `track_files` file-discovery semantics, which together shift the
+  # reported denominator from 1573 tracked lines to 1908 -- same 1114 lines
+  # actually covered, but the resulting percentage (58.38% vs. 70.82%) reads
+  # like a coverage regression when it's really just SimpleCov's own
+  # bookkeeping changing. Since 0.22.0 already runs fine on Ruby 3.3/Rails
+  # 8.0 (verified) and isn't a forced bump, reverted to keep this roadmap's
+  # coverage-gate percentage comparable hop-to-hop rather than trade a
+  # working, well-understood baseline for a confusing one-line "modernize
+  # while we're here" change.
   gem 'simplecov', '~> 0.22.0', require: false
 
   # Rails 5.0 extracted `assigns`/`assert_template` out of Action Controller;

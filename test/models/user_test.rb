@@ -1,4 +1,11 @@
 require 'test_helper'
+# `OpenStruct` (used below to stand in for an omniauth token) used to be
+# available without an explicit require -- some gem in the Rails 7.0 load
+# graph pulled in stdlib `ostruct` transitively. That's no longer true under
+# Rails 8.0 (roadmap Task 9's Ruby 3.3 + Rails 8.0 hop): `NameError:
+# uninitialized constant UserTest::OpenStruct`. Require it directly rather
+# than rely on an incidental transitive load.
+require 'ostruct'
 
 # Characterization tests for User — pins CURRENT behavior of the auth-critical
 # model (Devise modules, role helpers, visibility helpers, derived assignments,
@@ -150,7 +157,13 @@ class UserTest < ActiveSupport::TestCase
 
   test "manager_user scope matches admin and 'Manager' (case-sensitive on Manager)" do
     sql = User.manager_user.to_sql
-    assert_match(/role in \('admin','Manager'\)/, sql)
+    # Rails 8.0 (roadmap Task 9) changed Arel's SQL generation to add a space
+    # after the comma in `IN (...)` value lists -- purely cosmetic SQL-text
+    # formatting, not a behavior change (confirmed: the query itself still
+    # matches the same rows). Was `role in ('admin','Manager')` under Rails
+    # 7.0; allow an optional space so this stays green on both Gemfiles
+    # during the dual-boot window.
+    assert_match(/role in \('admin',\s*'Manager'\)/, sql)
   end
 
   # ---- visibility helpers -------------------------------------------------

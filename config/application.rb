@@ -9,39 +9,27 @@ Bundler.require(:default, Rails.env)
 
 module Fluxday
   class Application < Rails::Application
-    # Dual-boot scaffold (see Gemfile / Gemfile.next): this app can boot against
-    # either the current Gemfile (Rails 7.0, promoted from Gemfile.next by
-    # roadmap Task 8) or Gemfile.next (the next hop target, Rails 7.1 -> 7.2 ->
-    # 8.0 per Task 9) depending on BUNDLE_GEMFILE. Use `NextRails.next?` /
-    # `.current?` (from the `next_rails` gem) anywhere config or app code
-    # needs to branch between the two during a version hop, e.g.:
+    # Dual-boot scaffold (see Gemfile / Gemfile.next): this app now runs the
+    # roadmap's target_stack, Rails 8.0 / Ruby 3.3+ (roadmap Task 9, the LAST
+    # version-hop task). `Gemfile.next`/`Gemfile.next.lock` are left in place
+    # as the dual-boot mechanism (via `next_rails`'s `NextRails.next?`/
+    # `.current?`) but are NOT re-targeted to a further Rails/Ruby hop --
+    # there is no next version queued. Task 12 (dual-CI verify + handoff)
+    # decides whether to retire the dual-boot CI leg now that the ladder is
+    # climbed, or keep the scaffold for whatever comes after 8.0/3.3.
     #
-    #   if NextRails.next?
-    #     # Rails 7.1+-only config
-    #   else
-    #     # Rails 7.0-only config
-    #   end
-    #
-    # No branch was needed for the 4.1 -> 4.2 hop (Task 3) — the `responders`
-    # gem (now in this Gemfile) covered the only behavior difference relied on
-    # (class-level `respond_to`/`respond_with` in Api::V1::CredentialsController).
-    # The 4.2 -> 5.0 hop (Task 4) needed one for `belongs_to_required_by_default`
-    # (see below), but that config key exists on every Rails version since, so
-    # it no longer needs a NextRails.next? guard. The 5.0 -> 5.2 hop (Task 5)
-    # needed no config.rb branch either — every change (gem bumps, controller/
-    # test renames, `.uniq` -> `.distinct`, the `current_url` helper fix, the
-    # CarrierWave `image_tag(...).url` fixes) worked identically on both
-    # Gemfiles once landed. Task 6 (5.2 -> 6.0, Zeitwerk) needed exactly one
-    # branch, `config.load_defaults 6.0` below, removed once Gemfile.next was
-    # promoted (both Gemfiles ran Rails 6.0+ afterward). Task 7 (6.0 -> 6.1)
-    # needed the same kind of branch for `config.load_defaults 6.1`, likewise
-    # removed on promotion. Task 8 (6.1 -> 7.0) needed the same for
-    # `config.load_defaults 7.0` AND for the `require 'redirect_uri_validator'`
-    # fix in `config/initializers/doorkeeper.rb` — both now unconditional below
-    # now that Gemfile.next has been promoted to become this Gemfile (both
-    # Gemfile and the new Gemfile.next run Rails 7.0+, so there's nothing left
-    # to gate for either) — add a new `NextRails.next?` branch here for Task 9
-    # (7.0 -> 7.1 -> 7.2 -> 8.0) if/when one turns out to be needed.
+    # History of every `NextRails.next?` branch this app needed during the
+    # ladder (all now resolved/removed on promotion — no branch is live here
+    # today): Task 3 (4.1->4.2) needed none (`responders` gem covered it).
+    # Task 4 (4.2->5.0) branched `belongs_to_required_by_default` briefly;
+    # that config key exists on every Rails version since. Task 5 (5.0->5.2)
+    # needed no branch at all. Tasks 6/7/8 (5.2->6.0, 6.0->6.1, 6.1->7.0)
+    # each branched exactly one `config.load_defaults` bump plus (Task 8) the
+    # `require 'redirect_uri_validator'` doorkeeper fix; both removed on each
+    # promotion. Task 9 (7.0->7.1->7.2->8.0 + Ruby 3.1->3.3) branched
+    # `config.load_defaults` across all three minors during the dual-boot
+    # window (Rails 7.0 doesn't understand `load_defaults 7.1`/`7.2`/`8.0` --
+    # passing an unknown version raises); now unconditional below.
 
     # `config.load_defaults 6.0` is what actually turns on Zeitwerk
     # (autoloader defaults to :classic unless a 6.0+ `load_defaults` is set,
@@ -51,17 +39,21 @@ module Fluxday
     # the itemized walk of every other flag this bumps and why each one is
     # deliberately left pinned to its pre-6.0 behavior for now.
     #
-    # `config.load_defaults 6.1` (Task 7, roadmap Rails 6.0 -> 6.1) — see
-    # config/initializers/new_framework_defaults_6_1.rb for the itemized walk
-    # of every individually-togglable 6.1 behavior change and why each one is
-    # left pinned to its pre-6.1 default for now.
+    # `config.load_defaults 6.1` (Task 7) — see
+    # config/initializers/new_framework_defaults_6_1.rb.
     #
-    # `config.load_defaults 7.0` (Task 8, roadmap Rails 6.1 -> 7.0) now
-    # applies unconditionally — see config/initializers/new_framework_defaults_7_0.rb
-    # for the itemized walk of every individually-togglable 7.0 behavior
-    # change; only `raise_on_open_redirects` is flipped on (audited safe),
-    # everything else stays pinned to its pre-7.0 default for now.
-    config.load_defaults 7.0
+    # `config.load_defaults 7.0` (Task 8) — see
+    # config/initializers/new_framework_defaults_7_0.rb; only
+    # `raise_on_open_redirects` flipped on (audited safe).
+    #
+    # `config.load_defaults 8.0` (Task 9, roadmap's terminal hop, Rails
+    # 7.0 -> 7.1 -> 7.2 -> 8.0 + Ruby 3.1 -> 3.3) now applies unconditionally.
+    # See config/initializers/new_framework_defaults_7_1.rb, _7_2.rb, and
+    # _8_0.rb for the itemized walk of every individually-togglable behavior
+    # change across all three minors -- YJIT (`config.yjit = true`, 7.2) is
+    # the only one flipped on; everything else stays pinned to its pre-7.1
+    # default, same risk-tiered posture as every prior hop.
+    config.load_defaults 8.0
 
     # Rails 5.0 makes `belongs_to` required-by-default. This app was written
     # against the old optional-by-default behavior and has never validated

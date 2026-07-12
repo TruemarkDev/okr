@@ -21,6 +21,15 @@ ENV LANGUAGE en_US.UTF-8
 # ruby-lang release tarball -- same bionic base image, same apt packages
 # otherwise, minimal diff. `ruby-ng`'s `ruby2.7`/`ruby2.7-dev` packages are
 # dropped from this apt-get in favor of the source build below.
+#
+# roadmap Task 9 (Rails 7.0 -> 7.1 -> 7.2 -> 8.0, the final hop): bumps Ruby
+# 3.1 -> 3.3 alongside the Rails hop (Rails 7.2 requires Ruby >= 3.1, Rails
+# 8.0 requires Ruby >= 3.2, and the roadmap's own ramp lands on 3.3 here
+# regardless). Same brightbox-PPA gap applies (no Ruby 3.x packages, any
+# series) -- this apt-add-repository/apt-get block is now effectively
+# vestigial (kept only for its other apt packages) and the actual Ruby comes
+# from the from-source build below, same approach as Task 8, just a newer
+# tarball/version line.
 RUN apt-add-repository ppa:brightbox/ruby-ng
 RUN apt-get update
 # RUN apt-get upgrade -y
@@ -47,23 +56,24 @@ RUN apt-get install -y nodejs \
     imagemagick \
     wkhtmltopdf
 
-# Build Ruby 3.1.6 (last 3.1.x patch release) from source. `--disable-install-doc`
-# keeps the build fast; this is a dev/CI image, not a doc server.
-RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/3.1/ruby-3.1.6.tar.gz -o /tmp/ruby-3.1.6.tar.gz \
-    && tar -xzf /tmp/ruby-3.1.6.tar.gz -C /tmp \
-    && cd /tmp/ruby-3.1.6 \
+# Build Ruby 3.3.11 (latest 3.3.x patch release as of this hop) from source.
+# `--disable-install-doc` keeps the build fast; this is a dev/CI image, not a
+# doc server. Replaces the 3.1.6 build from Task 8 -- same approach, just the
+# newer minor line the roadmap's Ruby ramp calls for at this hop (Task 9).
+RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/3.3/ruby-3.3.11.tar.gz -o /tmp/ruby-3.3.11.tar.gz \
+    && tar -xzf /tmp/ruby-3.3.11.tar.gz -C /tmp \
+    && cd /tmp/ruby-3.3.11 \
     && ./configure --disable-install-doc \
     && make -j"$(nproc)" \
     && make install \
     && cd / \
-    && rm -rf /tmp/ruby-3.1.6 /tmp/ruby-3.1.6.tar.gz
+    && rm -rf /tmp/ruby-3.3.11 /tmp/ruby-3.3.11.tar.gz
 
-# Bundler bump for the Ruby 2.7 -> 3.1 hop (roadmap Task 8): 2.4.22 (pinned
-# for Task 6's Ruby 2.7 floor) still runs fine on Ruby 3.1, but 2.5.x is the
-# latest 2.x line and has no known Ruby 3.1 incompatibilities, so move to it
-# here; Gemfile.lock's `BUNDLED WITH` is updated to match once this hop's
-# `bundle install` regenerates it.
-RUN gem install bundler -v '2.5.23' --no-document
+# Bundler bump for the Ruby 3.1 -> 3.3 hop (roadmap Task 9): 2.5.23 (pinned
+# for Task 8's Ruby 3.1 floor) still runs fine on Ruby 3.3, but move to the
+# current 2.x line for good measure; Gemfile.lock's `BUNDLED WITH` is updated
+# to match once this hop's `bundle install` regenerates it.
+RUN gem install bundler -v '2.7.2' --no-document
 
 ENV APP_HOME /share
 RUN mkdir $APP_HOME
