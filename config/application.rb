@@ -10,16 +10,16 @@ Bundler.require(:default, Rails.env)
 module Fluxday
   class Application < Rails::Application
     # Dual-boot scaffold (see Gemfile / Gemfile.next): this app can boot against
-    # either the current Gemfile (Rails 6.1, promoted from Gemfile.next by
-    # roadmap Task 7) or Gemfile.next (the next hop target, Rails 7.0 per
-    # Task 8) depending on BUNDLE_GEMFILE. Use `NextRails.next?` / `.current?`
-    # (from the `next_rails` gem) anywhere config or app code needs to branch
-    # between the two during a version hop, e.g.:
+    # either the current Gemfile (Rails 7.0, promoted from Gemfile.next by
+    # roadmap Task 8) or Gemfile.next (the next hop target, Rails 7.1 -> 7.2 ->
+    # 8.0 per Task 9) depending on BUNDLE_GEMFILE. Use `NextRails.next?` /
+    # `.current?` (from the `next_rails` gem) anywhere config or app code
+    # needs to branch between the two during a version hop, e.g.:
     #
     #   if NextRails.next?
-    #     # Rails 7.0-only config
+    #     # Rails 7.1+-only config
     #   else
-    #     # Rails 6.1-only config
+    #     # Rails 7.0-only config
     #   end
     #
     # No branch was needed for the 4.1 -> 4.2 hop (Task 3) — the `responders`
@@ -34,12 +34,14 @@ module Fluxday
     # Gemfiles once landed. Task 6 (5.2 -> 6.0, Zeitwerk) needed exactly one
     # branch, `config.load_defaults 6.0` below, removed once Gemfile.next was
     # promoted (both Gemfiles ran Rails 6.0+ afterward). Task 7 (6.0 -> 6.1)
-    # needed the same kind of branch for `config.load_defaults 6.1`, now
-    # likewise removed below now that Gemfile.next has been promoted to
-    # become this Gemfile (both Gemfile and the new Gemfile.next run Rails
-    # 6.1+, so there's nothing left to gate for that flag) — add a new
-    # `NextRails.next?` branch here for Task 8 (6.1 -> 7.0) if/when one turns
-    # out to be needed for that hop's own `config.load_defaults 7.0`.
+    # needed the same kind of branch for `config.load_defaults 6.1`, likewise
+    # removed on promotion. Task 8 (6.1 -> 7.0) needed the same for
+    # `config.load_defaults 7.0` AND for the `require 'redirect_uri_validator'`
+    # fix in `config/initializers/doorkeeper.rb` — both now unconditional below
+    # now that Gemfile.next has been promoted to become this Gemfile (both
+    # Gemfile and the new Gemfile.next run Rails 7.0+, so there's nothing left
+    # to gate for either) — add a new `NextRails.next?` branch here for Task 9
+    # (7.0 -> 7.1 -> 7.2 -> 8.0) if/when one turns out to be needed.
 
     # `config.load_defaults 6.0` is what actually turns on Zeitwerk
     # (autoloader defaults to :classic unless a 6.0+ `load_defaults` is set,
@@ -49,11 +51,17 @@ module Fluxday
     # the itemized walk of every other flag this bumps and why each one is
     # deliberately left pinned to its pre-6.0 behavior for now.
     #
-    # `config.load_defaults 6.1` (Task 7, roadmap Rails 6.0 -> 6.1) now
-    # applies unconditionally — see config/initializers/new_framework_defaults_6_1.rb
-    # for the itemized walk of every individually-togglable 6.1 behavior
-    # change and why each one is left pinned to its pre-6.1 default for now.
-    config.load_defaults 6.1
+    # `config.load_defaults 6.1` (Task 7, roadmap Rails 6.0 -> 6.1) — see
+    # config/initializers/new_framework_defaults_6_1.rb for the itemized walk
+    # of every individually-togglable 6.1 behavior change and why each one is
+    # left pinned to its pre-6.1 default for now.
+    #
+    # `config.load_defaults 7.0` (Task 8, roadmap Rails 6.1 -> 7.0) now
+    # applies unconditionally — see config/initializers/new_framework_defaults_7_0.rb
+    # for the itemized walk of every individually-togglable 7.0 behavior
+    # change; only `raise_on_open_redirects` is flipped on (audited safe),
+    # everything else stays pinned to its pre-7.0 default for now.
+    config.load_defaults 7.0
 
     # Rails 5.0 makes `belongs_to` required-by-default. This app was written
     # against the old optional-by-default behavior and has never validated

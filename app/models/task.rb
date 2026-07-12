@@ -17,6 +17,25 @@ class Task < ApplicationRecord
 
   default_scope { where.not(is_deleted: true).order('id desc') }
 
+  # ransack 4.x (roadmap Task 8's Rails 7.0 hop -- see the Gemfile comment on
+  # the `ransack` bump) requires attributes to be explicitly allowlisted
+  # before they're searchable, as a security default (ransack CVE-2020-8163-
+  # style mass-search exposure). `HomeController#search` only ever ransacks
+  # `tracker_id_or_name_or_description_cont`, so only those three need to be
+  # allowlisted -- keep this scoped to actual usage rather than opening up
+  # every column.
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[tracker_id name description]
+  end
+
+  # Same allowlist requirement as `ransackable_attributes` above -- no
+  # association is ever traversed by the one `home_controller.rb` ransack
+  # call, so this stays empty rather than opening up `user`/`team`/`project`
+  # etc. to search.
+  def self.ransackable_associations(_auth_object = nil)
+    []
+  end
+
   before_create :add_tracker_id
 
   after_save :update_team_task_count

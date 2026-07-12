@@ -6,12 +6,25 @@ CMD ["/sbin/my_init"]
 ENV LANGUAGE en_US.UTF-8
 
 # Install os dependencies
+# roadmap Task 8 (Rails 6.1 -> 7.0): bumps Ruby 2.7 -> 3.1 alongside the Rails
+# hop, per the roadmap's Ruby ramp. VERIFIED (do not trust the roadmap's own
+# assumption here): brightbox's `ruby-ng` PPA does NOT carry Ruby 3.x at all,
+# for ANY Ubuntu series -- its own archive description on Launchpad reads
+# "Ubuntu packages for Ruby 2.7, 2.6, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0 1.9.3 and
+# 1.8"; confirmed empirically too (`apt-cache search ruby` against the PPA's
+# real Packages.gz for both bionic AND focal tops out at ruby2.7). There is
+# no newer phusion/baseimage + brightbox-PPA combination that gets us Ruby
+# 3.1 packages. Rather than rebase this image onto a non-brightbox
+# distribution (a bigger, riskier change than this hop's scope, and phusion's
+# `/sbin/my_init` supervision the CMD relies on stays compatible with the
+# bionic base either way), build Ruby 3.1 from source via the standard
+# ruby-lang release tarball -- same bionic base image, same apt packages
+# otherwise, minimal diff. `ruby-ng`'s `ruby2.7`/`ruby2.7-dev` packages are
+# dropped from this apt-get in favor of the source build below.
 RUN apt-add-repository ppa:brightbox/ruby-ng
 RUN apt-get update
 # RUN apt-get upgrade -y
 RUN apt-get install -y nodejs \
-    ruby2.7 \
-    ruby2.7-dev \
     build-essential \
     curl \
     zlib1g-dev \
@@ -21,6 +34,11 @@ RUN apt-get install -y nodejs \
     libxml2-dev \
     libxslt-dev \
     libpq-dev \
+    libffi-dev \
+    libgdbm-dev \
+    libncurses5-dev \
+    autoconf \
+    bison \
     git python-virtualenv \
     libmysqlclient-dev \
     libmagickwand-dev \
@@ -29,11 +47,23 @@ RUN apt-get install -y nodejs \
     imagemagick \
     wkhtmltopdf
 
-# Bundler 2.4.22 is the latest release that still supports Ruby 2.7 (2.5.0+
-# raises Bundler's own floor to Ruby >= 3.0); bumped from 1.17.3 as part of
-# roadmap Task 6 alongside the Ruby 2.4 -> 2.7 bump. Gemfile.lock's
-# `BUNDLED WITH` matches.
-RUN gem install bundler -v '2.4.22' --no-document
+# Build Ruby 3.1.6 (last 3.1.x patch release) from source. `--disable-install-doc`
+# keeps the build fast; this is a dev/CI image, not a doc server.
+RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/3.1/ruby-3.1.6.tar.gz -o /tmp/ruby-3.1.6.tar.gz \
+    && tar -xzf /tmp/ruby-3.1.6.tar.gz -C /tmp \
+    && cd /tmp/ruby-3.1.6 \
+    && ./configure --disable-install-doc \
+    && make -j"$(nproc)" \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/ruby-3.1.6 /tmp/ruby-3.1.6.tar.gz
+
+# Bundler bump for the Ruby 2.7 -> 3.1 hop (roadmap Task 8): 2.4.22 (pinned
+# for Task 6's Ruby 2.7 floor) still runs fine on Ruby 3.1, but 2.5.x is the
+# latest 2.x line and has no known Ruby 3.1 incompatibilities, so move to it
+# here; Gemfile.lock's `BUNDLED WITH` is updated to match once this hop's
+# `bundle install` regenerates it.
+RUN gem install bundler -v '2.5.23' --no-document
 
 ENV APP_HOME /share
 RUN mkdir $APP_HOME

@@ -32,7 +32,7 @@ class HomeController < ApplicationController
     if @task.present?
       redirect_to :controller=>'tasks',:action=>'show',:id=>@task.tracker_id
     else
-      @tasks = Task.searchable_for_user(current_user).search('tracker_id_or_name_or_description_cont'=>params[:search][:keyword]).result.paginate(page: params[:page], per_page: 10).order('id DESC')
+      @tasks = Task.searchable_for_user(current_user).ransack('tracker_id_or_name_or_description_cont'=>params[:search][:keyword]).result.paginate(page: params[:page], per_page: 10).order('id DESC')
       #render :layout => 'less_pane'
     end
   end
