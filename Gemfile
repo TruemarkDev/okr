@@ -244,12 +244,38 @@ gem 'ransack', '~> 4.4.1'
 gem "will_paginate"
 gem "cocoon"
 # wicked_pdf 0.9.10's PdfHelper module uses `alias_method_chain`, which Rails
-# 5.1 removed outright. Bumped to the first release that drops it; the
-# roadmap's full wicked_pdf/wkhtmltopdf-binary replacement discussion (Task
-# 11) is still deferred.
+# 5.1 removed outright. Bumped to the first release that drops it.
+#
+# Roadmap Task 11 investigated replacing wicked_pdf/wkhtmltopdf-binary
+# outright (the underlying wkhtmltopdf binary is unmaintained upstream).
+# Under Rails 8.0 the ReportsController's `format.pdf` actions had bit-rotted
+# in two small, unrelated ways -- NOT anything wrong with wkhtmltopdf itself:
+#   1. `config/initializers/wicked_pdf.rb` hardcoded a long-gone
+#      `#{Rails.root}/lib/wkhtmltopdf` exe_path from before this app switched
+#      to the `wkhtmltopdf-binary` gem (which puts `wkhtmltopdf` on PATH via
+#      its own bin stub) -- fixed by dropping the stale override.
+#   2. Every `format.pdf { render ... :layout => 'pdf.html' }` call used an
+#      old convention of suffixing the layout name with ".html" to force
+#      html-format layout lookup during a :pdf-format request; Rails 8's
+#      template lookup no longer honors that, raising ActionView::
+#      MissingTemplate. Fixed by using the format-less `:layout => 'pdf'`
+#      (Rails' lookup context already searches the request's declared
+#      formats plus html for layouts).
+# With both fixed, wkhtmltopdf 0.12.6 (bundled by wkhtmltopdf-binary) renders
+# real, valid PDFs again (verified via a real render + `%PDF-` magic-number
+# check in test/controllers/reports_controller_test.rb) -- there is no
+# current forcing function (crash/missing binary/broken output) to justify
+# swapping rendering engines (e.g. to grover/ferrum_pdf), so the gem stays
+# put. Revisit if wkhtmltopdf itself breaks on some future platform.
 gem 'wicked_pdf', '~> 2.1.0'
 gem 'wkhtmltopdf-binary' # bundle the binary so there's no system-level wkhtmltopdf dependency
-gem 'friendly_id', '~> 5.0.0'
+# Was pinned `~> 5.0.0`, which (pessimistic operator) only floats 5.0.x
+# patches -- resolved to the years-old 5.0.5 even though the whole 5.x line
+# (through 5.7.0, still `activerecord >= 4.0.0`, no Rails-8-incompatible API
+# changes) is current and there's no 6.x major to avoid. Bumped the pin to
+# the latest 5.x (roadmap Task 11); `Task`/`User`'s plain `friendly_id
+# :tracker_id`/`:employee_code` usage needed no code changes.
+gem 'friendly_id', '~> 5.7.0'
 # doorkeeper 4.4.3 (last 4.x release) did NOT survive the Ruby 2.7 -> 3.1
 # bump (roadmap Task 8) -- fixed by bumping to 5.1.2, the earliest 5.x patch
 # whose `belongs_to` calls use keyword-literal syntax instead of a
@@ -275,7 +301,17 @@ gem 'doorkeeper', '~> 5.1.2'
 
 gem "omniauth-oauth2"#, '1.0.2'
 #gem 'omniauth-fluxapp' , :path => '/home/tp/Desktop/flux'
-gem 'omniauth-fluxapp' , :git  => 'https://github.com/stpnlr/omniauth-fluxapp.git'
+# omniauth-fluxapp is only published at this git URL -- there is no
+# rubygems.org release (confirmed: `gem list -r ^omniauth-fluxapp$` /
+# rubygems.org's API return nothing) and the upstream repo has no tags
+# either, so there's no `:tag` to pin to. It was floating on unpinned
+# `master`, which happened to still be the exact commit this app's
+# Gemfile.lock had already resolved to (`a00079af6...`, last pushed
+# 2021-10-03 -- the repo looks abandoned/stale, an external risk this repo
+# can't fix). Roadmap Task 11: pin the Gemfile itself to that same `:ref`
+# so a future `bundle update` can't silently drift onto whatever `master`
+# becomes if the repo ever gets new commits.
+gem 'omniauth-fluxapp' , :git => 'https://github.com/stpnlr/omniauth-fluxapp.git', :ref => 'a00079af6e6ebb9dae5ca4c50ff4dfb01a20f159'
 gem 'tzinfo-data'
 
 group :test do

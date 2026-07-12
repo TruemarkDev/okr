@@ -168,6 +168,25 @@ class ReportsControllerTest < ActionController::TestCase
     assert_not_nil assigns(:tasks)
   end
 
+  # ---- pdf rendering (roadmap Task 11 -- wicked_pdf/wkhtmltopdf-binary
+  # characterization: pins that `format.pdf` actually shells out to
+  # wkhtmltopdf and returns a real PDF under the current Rails 8.0 stack,
+  # not just that the action doesn't raise) ------------------------------------
+
+  test "okrs renders a real pdf via wicked_pdf/wkhtmltopdf" do
+    get :okrs, format: :pdf
+    assert_response :success
+    assert_equal 'application/pdf', @response.content_type
+    assert @response.body.start_with?('%PDF-'), 'response body is not a valid PDF (missing %PDF- magic number)'
+  end
+
+  test "worklogs renders a real pdf via wicked_pdf/wkhtmltopdf" do
+    get :worklogs, params: { month: 'January', year: '2000' }, format: :pdf
+    assert_response :success
+    assert_equal 'application/pdf', @response.content_type
+    assert @response.body.start_with?('%PDF-'), 'response body is not a valid PDF (missing %PDF- magic number)'
+  end
+
   # ---- worklogs --------------------------------------------------------------
 
   test "worklogs renders for a month with no logs" do
