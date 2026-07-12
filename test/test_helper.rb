@@ -20,7 +20,7 @@ end
 
 # Devise 3.5 Minitest integration: gives ActionController::TestCase access to
 # sign_in / sign_out for controller tests (ApplicationController has a global
-# authenticate_user! before_filter).
+# authenticate_user! before_action).
 class ActionController::TestCase
-  include Devise::TestHelpers
+  include Devise::Test::ControllerHelpers
 end

@@ -7,7 +7,7 @@ class Team < ApplicationRecord
   has_many :key_results, :through => :okrs
   has_many :leads, -> { where role: 'lead' }, class_name: 'TeamMember'
   has_many :team_leads, :through => :leads, :source => :user #,:foreign_key=>'user_id'
-  has_many :members, -> { uniq }, :through => :team_members, :source => :user
+  has_many :members, -> { distinct }, :through => :team_members, :source => :user
 
   validates_presence_of :name, :code, :project_id
 

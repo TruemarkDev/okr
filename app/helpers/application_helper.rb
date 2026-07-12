@@ -1,6 +1,11 @@
 module ApplicationHelper
   def current_url(new_params)
-    url_for :params => params.merge(new_params)
+    # Rails 5.1+ hard-raises ("unable to convert unpermitted parameters to
+    # hash") when an unpermitted ActionController::Parameters is implicitly
+    # converted to a Hash (previously just a deprecation warning under 5.0).
+    # This helper only ever builds a query string for the current page, so
+    # explicitly unwrap via #to_unsafe_h rather than adding a permit-list.
+    url_for :params => params.to_unsafe_h.merge(new_params)
     #params.merge!(new_params)
     #string = params.map{ |k,v| "#{k}=#{v}" }.join("&")
     #request.original_url.split("?")[0] + "?" + string

@@ -19,30 +19,30 @@ class OkrsControllerTest < ActionController::TestCase
 
   test "should create okr" do
     assert_difference('Okr.count') do
-      post :create, okr: { end_date: @okr.end_date, name: @okr.name, start_date: @okr.start_date, user_id: @okr.user_id }
+      post :create, params: { okr: { end_date: @okr.end_date, name: @okr.name, start_date: @okr.start_date, user_id: @okr.user_id } }
     end
 
     assert_redirected_to user_okr_path(assigns(:okr).user_id, assigns(:okr))
   end
 
   test "should show okr" do
-    get :show, id: @okr
+    get :show, params: { id: @okr }
     assert_response :success
   end
 
   test "should get edit" do
-    get :edit, id: @okr
+    get :edit, params: { id: @okr }
     assert_response :success
   end
 
   test "should update okr" do
-    patch :update, id: @okr, okr: { end_date: @okr.end_date, name: @okr.name, start_date: @okr.start_date, user_id: @okr.user_id }
+    patch :update, params: { id: @okr, okr: { end_date: @okr.end_date, name: @okr.name, start_date: @okr.start_date, user_id: @okr.user_id } }
     assert_redirected_to user_okr_path(assigns(:okr).user_id, assigns(:okr))
   end
 
   test "should destroy okr" do
     assert_difference('Okr.count', -1) do
-      delete :destroy, id: @okr
+      delete :destroy, params: { id: @okr }
     end
 
     assert_redirected_to okrs_path
@@ -64,7 +64,7 @@ class OkrsControllerTest < ActionController::TestCase
   end
 
   test "show assigns @user from the okr and the user's active okrs" do
-    get :show, id: @okr
+    get :show, params: { id: @okr }
     assert_response :success
     assert_equal @okr.user, assigns(:user)
     assert_not_nil assigns(:okrs)
@@ -72,7 +72,7 @@ class OkrsControllerTest < ActionController::TestCase
 
   test "create with nested objectives cascades dates down to children" do
     assert_difference('Objective.count', 1) do
-      post :create, okr: {
+      post :create, params: { okr: {
         name: "Nested OKR",
         user_id: users(:admin).id,
         start_date: "2015-01-01",
@@ -83,7 +83,7 @@ class OkrsControllerTest < ActionController::TestCase
             key_results_attributes: { "0" => { name: "KR one" } }
           }
         }
-      }
+      } }
     end
     okr = assigns(:okr)
     assert_redirected_to user_okr_path(okr.user_id, okr)
@@ -95,8 +95,8 @@ class OkrsControllerTest < ActionController::TestCase
 
   test "create with missing name re-renders new" do
     assert_no_difference('Okr.count') do
-      post :create, okr: { name: "", user_id: users(:admin).id,
-                           start_date: @okr.start_date, end_date: @okr.end_date }
+      post :create, params: { okr: { name: "", user_id: users(:admin).id,
+                           start_date: @okr.start_date, end_date: @okr.end_date } }
     end
     assert_template :new
   end
@@ -105,7 +105,7 @@ class OkrsControllerTest < ActionController::TestCase
     okr = Okr.create!(name: "Editable", user_id: users(:admin).id,
                       start_date: Date.new(2014, 1, 1), end_date: Date.new(2014, 3, 31),
                       objectives_attributes: [{ name: "Obj" }])
-    patch :update, id: okr, okr: { start_date: "2016-07-01", end_date: "2016-09-30" }
+    patch :update, params: { id: okr, okr: { start_date: "2016-07-01", end_date: "2016-09-30" } }
     assert_redirected_to user_okr_path(okr.user_id, okr)
     assert_equal Date.new(2016, 7, 1), okr.objectives.first.reload.start_date
   end
@@ -113,14 +113,14 @@ class OkrsControllerTest < ActionController::TestCase
   test "destroy is a hard delete not a soft delete" do
     okr = Okr.create!(name: "Doomed", user_id: users(:admin).id,
                       start_date: Date.today, end_date: Date.today)
-    delete :destroy, id: okr
+    delete :destroy, params: { id: okr }
     assert_nil Okr.where(id: okr.id).first
   end
 
   test "approve sets approved true for a manager via nested route" do
     okr = Okr.create!(name: "Pending", user_id: users(:admin).id,
                       start_date: Date.today, end_date: Date.today, approved: false)
-    xhr :post, :approve, user_id: users(:admin).id, id: okr
+    post :approve, params: { user_id: users(:admin).id, id: okr }, xhr: true
     assert okr.reload.approved
   end
 end

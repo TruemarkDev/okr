@@ -12,7 +12,7 @@ class Task < ApplicationRecord
   has_many :work_logs
   has_many :task_key_results
   has_many :key_results, :through => :task_key_results
-  has_many :users, -> { uniq }, :through => :key_results
+  has_many :users, -> { distinct }, :through => :key_results
 
 
   default_scope { where.not(is_deleted: true).order('id desc') }

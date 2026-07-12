@@ -5,7 +5,7 @@ class Project < ApplicationRecord
   has_many :project_managers
   has_many :users,:through=>:project_managers,:after_remove => :update_user_project_count
   has_many :team_members, :through => :teams
-  has_many :project_members, -> { uniq }, :through => :team_members, :source => :user
+  has_many :project_members, -> { distinct }, :through => :team_members, :source => :user
   scope :active, -> {where(is_deleted: false)}
 
   validates_presence_of :name, :code
@@ -17,7 +17,7 @@ class Project < ApplicationRecord
   #after_save  :update_numbers
 
   def members
-    return project_members.active.uniq
+    return project_members.active.distinct
   end
 
   def update_user_project_count(pm)

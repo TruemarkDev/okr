@@ -10,25 +10,31 @@ Bundler.require(:default, Rails.env)
 module Fluxday
   class Application < Rails::Application
     # Dual-boot scaffold (see Gemfile / Gemfile.next): this app can boot against
-    # either the current Gemfile (Rails 5.0, promoted from Gemfile.next by
-    # roadmap Task 4) or Gemfile.next (the next hop target, Rails 5.1/5.2 per
-    # Task 5) depending on BUNDLE_GEMFILE. Use `NextRails.next?` / `.current?`
+    # either the current Gemfile (Rails 5.2, promoted from Gemfile.next by
+    # roadmap Task 5) or Gemfile.next (the next hop target, Rails 6.0 per
+    # Task 6) depending on BUNDLE_GEMFILE. Use `NextRails.next?` / `.current?`
     # (from the `next_rails` gem) anywhere config or app code needs to branch
     # between the two during a version hop, e.g.:
     #
     #   if NextRails.next?
-    #     # Rails 5.2-only config
+    #     # Rails 6.0-only config
     #   else
-    #     # Rails 5.0-only config
+    #     # Rails 5.2-only config
     #   end
     #
     # No branch was needed for the 4.1 -> 4.2 hop (Task 3) — the `responders`
     # gem (now in this Gemfile) covered the only behavior difference relied on
     # (class-level `respond_to`/`respond_with` in Api::V1::CredentialsController).
-    # The 4.2 -> 5.0 hop (Task 4) needed one below for
-    # `belongs_to_required_by_default`, but that config key exists on both
-    # Rails 5.0 (current) and 5.1/5.2 (Gemfile.next), so it no longer needs a
-    # NextRails.next? guard now that Task 4 is promoted.
+    # The 4.2 -> 5.0 hop (Task 4) needed one for `belongs_to_required_by_default`
+    # (see below), but that config key exists on every Rails version since, so
+    # it no longer needs a NextRails.next? guard. The 5.0 -> 5.2 hop (Task 5)
+    # needed no config.rb branch either — every change (gem bumps, controller/
+    # test renames, `.uniq` -> `.distinct`, the `current_url` helper fix, the
+    # CarrierWave `image_tag(...).url` fixes) worked identically on both
+    # Gemfiles once landed. Task 6 (Zeitwerk) is very likely to need a real
+    # branch here — Zeitwerk enforces file/constant naming that classic
+    # autoloading didn't, so expect `config.autoloader` or eager-load-path
+    # differences between the two Gemfiles while that hop is in progress.
 
     # Rails 5.0 makes `belongs_to` required-by-default. This app was written
     # against the old optional-by-default behavior and has never validated

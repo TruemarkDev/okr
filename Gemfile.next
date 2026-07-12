@@ -1,72 +1,101 @@
 source 'https://rubygems.org'
 
 # Dual-boot scaffold (FastRuby methodology): lets this app boot against either
-# this Gemfile (current: Rails 5.0) or Gemfile.next (next hop target) via
-# BUNDLE_GEMFILE, and exposes NextRails.next?/current? for any code/config
-# that needs to branch during a version hop. Keep this outside any group so
-# the helpers are available everywhere. See https://github.com/fastruby/next_rails
+# this Gemfile (current: Rails 5.2, promoted from Gemfile.next by Task 5) or
+# Gemfile.next (next hop target, Rails 6.0 per Task 6) via BUNDLE_GEMFILE, and
+# exposes NextRails.next?/current? for any code/config that needs to branch
+# during a version hop. Keep this outside any group so the helpers are
+# available everywhere. See https://github.com/fastruby/next_rails
 gem 'next_rails'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-# NEXT hop (Task 5, roadmap §7 row 5): Rails 5.0 -> 5.1 -> 5.2 (grouped as one
-# hop by the roadmap; jumping straight to 5.2 in one lock resolution).
+# NEXT hop (Task 6, roadmap §7 row 6): Rails 5.2 -> 6.0, interleaved with the
+# Ruby 2.4 -> 2.6/2.7 bump. Flagged by the roadmap as the highest-risk hop so
+# far ("autoloader rewrite risk", 3-6 eng-days). NOT started — this is just
+# the version-pin scaffold step, mirroring what Task 4's agent left for
+# Task 5. Known Rails 6.0 changes to account for, in rough priority order:
 #
-# Known Rails 5.1/5.2 changes to account for in that hop (not yet resolved
-# here — this is just the version-pin scaffold step):
-#   - Ruby 2.4 becomes the effective floor for Rails 5.2 — bump Ruby as part
-#     of this hop (Ruby ramp step 2.3 -> 2.4 per roadmap §3), but only as far
-#     as 2.4; the next Ruby bump (2.6/2.7) belongs to Task 6 (Zeitwerk hop).
-#   - `secrets.yml` -> `credentials.yml.enc` migration is available in 5.2
-#     but NOT required — Rails keeps `secrets.yml` working. Do not migrate as
-#     a side effect of this hop unless it's blocking something.
-#   - `before_action`/`after_action` — this app already uses `before_filter`
-#     (deprecated since 5.0, removed in 5.1 per the deprecation warnings seen
-#     under Rails 5.0). This hop MUST rename every `before_filter`/
-#     `after_filter` to `before_action`/`after_action` or the app won't boot.
-#   - `uniq` on relations deprecated since 5.0, removed in 5.1 — same
-#     deprecation warnings seen under Rails 5.0 (app/models/user.rb, task.rb,
-#     team.rb, project.rb) must become `distinct`.
-#   - Positional args in functional/controller tests (`get :show, {id: 1}`)
-#     deprecated since 5.0, removed in 5.1 — controller tests using the old
-#     positional style (e.g. test/controllers/work_logs_controller_test.rb)
-#     must move to keyword args (`get :show, params: {id: 1}`).
-#   - mysql2 gem: 0.3.21 may need a bump for Rails 5.1/5.2 compatibility —
-#     check during this hop (roadmap flags mysql2 ~> 0.4/0.5 as needed by
-#     Rails >= 5.1).
-#   - devise 4.2.x may need a further bump (its railties cap may exclude
-#     5.1/5.2) — check devise's own compatibility matrix.
-#   - cancancan/ransack may need version bumps too — ransack is currently
-#     hard-pinned to 2.3.0 for the 5.0/Ruby-2.3 ceiling; check whether a
-#     newer release becomes available once Ruby bumps to 2.4.
+#   - **Zeitwerk autoloader** (the headline change): Rails 6.0 defaults
+#     `config.autoloader = :zeitwerk`, which enforces strict file-path <->
+#     constant-name correspondence (no more implicit "any file under
+#     app/models autoloads any constant"). Concretely for this app:
+#       * Audit `app/models/concerns/` and `app/controllers/concerns/` (if
+#         any exist beyond the Devise/CanCanCan defaults) for filenames that
+#         don't match their module/class name.
+#       * Check `lib/` (e.g. `lib/time_to_diff.rb`) — Zeitwerk autoloads
+#         `lib/` only if it's on the autoload paths; classic autoloader was
+#         more forgiving about ad hoc `require`/monkeypatch files there.
+#         `lib/time_to_diff.rb` currently patches core classes (Fixnum/
+#         Integer) rather than defining an autoloadable constant — confirm
+#         it's required explicitly (e.g. via an initializer) rather than
+#         relying on autoload, or Zeitwerk will complain it doesn't define
+#         the constant its path implies.
+#       * Check `config/initializers/inflections.rb` for acronym/irregular
+#         rules Zeitwerk needs to know about for constant<->filename
+#         translation.
+#       * Zeitwerk does not allow reopening a class/module across multiple
+#         files under the autoload paths the way classic autoloading
+#         tolerated (each constant must have exactly one defining file) —
+#         grep for any such split-definition pattern before flipping the
+#         autoloader.
+#   - `config.load_defaults 6.0` — walk the resulting
+#     `new_framework_defaults_6_0.rb` toggles one at a time (per the
+#     roadmap's risk-tiered `load_defaults` ramp), don't flip wholesale.
+#   - `Rails.application.config_for` — return value changed from
+#     `HashWithIndifferentAccess` to `ActiveSupport::OrderedOptions` in 6.0;
+#     grep for any `config_for` usage (none found as of the 5.2 hop, but
+#     re-check since new config may be added before this hop lands).
+#   - Webpacker became the new-app JS default in 6.0, but this app keeps
+#     Sprockets/coffee-rails/jquery-rails — no forced migration; the
+#     asset-pipeline modernization is intentionally deferred to the 6.1->7.0
+#     hop (roadmap Task 8) where Propshaft/importmap gets decided.
+#   - Ruby: bump 2.4 -> 2.6 or 2.7 as part of this hop (roadmap's Ruby ramp
+#     interleaving), landing wherever the gem cluster below actually
+#     resolves cleanly — Rails 6.0 itself only requires Ruby >= 2.5, but
+#     several gems bumped alongside it (nokogiri >= 1.11, simplecov >= 0.19,
+#     ransack past 2.4.1, doorkeeper past 4.x) will likely force landing on
+#     2.6 or 2.7 rather than stopping at 2.5. Check each gem's actual floor
+#     during this hop rather than assuming.
+#   - devise/cancancan/doorkeeper/ransack/mysql2: re-verify each still
+#     resolves and boots under Rails 6.0 — none were pinned with an upper
+#     `< 6.0`/`< 6` cap as of the 5.2 hop except devise (`~> 4.6.0`, whose
+#     resolved 4.6.2 caps `railties < 6.0` and WILL need a further bump this
+#     hop).
 #
-# NOTE: this pin alone does not currently resolve (`bundle lock` fails) and
-# there is deliberately no Gemfile.next.lock checked in for it yet — the
-# above list is real implementation work for Task 5, not a mechanical pin
-# bump.
-gem 'rails', '~> 5.2.0'
+# NOTE: this pin alone does not currently resolve (`bundle lock` under
+# BUNDLE_GEMFILE=Gemfile.next hangs/fails against devise's `< 6.0` railties
+# cap) and there is deliberately no Gemfile.next.lock checked in for it yet —
+# the above list is real implementation work for Task 6, not a mechanical
+# pin bump.
+gem 'rails', '~> 6.0.0'
 
 # Rails 4.2 extracted the class-level `respond_to`/`respond_with` API (used by
 # Api::V1::CredentialsController) out of Action Controller into this gem.
 gem 'responders', '~> 2.0'
 
-# Ruby 2.3 ceiling: nokogiri >= 1.11 requires Ruby >= 2.5, so pin to the last
-# release supporting Ruby 2.3. loofah/rails-html-sanitizer must be pinned in
-# lockstep — loofah >= 2.20 assumes the Nokogiri::HTML4/HTML5 split that only
-# exists on nokogiri >= 1.11, so left unpinned they resolve to versions that
-# raise `NameError: uninitialized constant Nokogiri::HTML4` on boot. Revisit
-# once the Ruby ramp (§3) lands past 2.5.
+# Ruby 2.4 ceiling carried over from the 5.2 hop: nokogiri >= 1.11 requires
+# Ruby >= 2.5, so pin to the last release supporting Ruby 2.4. Once this
+# hop's Ruby bump (2.4 -> 2.6/2.7) actually lands, revisit this pin —
+# nokogiri/loofah/rails-html-sanitizer can very likely all move to current
+# releases at that point. loofah/rails-html-sanitizer must stay pinned in
+# lockstep with whatever nokogiri version is chosen — loofah >= 2.20 assumes
+# the Nokogiri::HTML4/HTML5 split that only exists on nokogiri >= 1.11, so
+# left unpinned/mismatched they resolve to versions that raise `NameError:
+# uninitialized constant Nokogiri::HTML4` on boot.
 gem 'nokogiri', '~> 1.10.10'
 gem 'loofah', '~> 2.19.1'
 gem 'rails-html-sanitizer', '~> 1.4.4'
 
-# devise 3.5.10's omniauth integration hard-asserts `OmniAuth::VERSION =~ /^1\./`
-# (lib/devise/omniauth.rb) and raises on boot otherwise. Left unpinned,
-# omniauth-oauth2/omniauth-google-oauth2 resolve to a 2.x omniauth. Pin to the
-# same 1.x line this Gemfile resolves to until devise is upgraded past 4.x.
+# devise 4.6.x's omniauth integration is more lenient than 3.5's hard
+# `OmniAuth::VERSION =~ /^1\./` assertion, but this app's omniauth-fluxapp /
+# omniauth-oauth2 / omniauth-google-oauth2 strategies are still written
+# against OmniAuth 1.x request-phase semantics (OmniAuth 2.0 changed the
+# request phase from GET to POST and needs omniauth-rails_csrf_protection).
+# Keep pinning to the 1.x line until that migration is deliberately scoped.
 gem 'omniauth', '~> 1.9'
 
 # Use mysql as the database for Active Record
-gem 'mysql2', '0.3.21'
+gem 'mysql2', '~> 0.4.10'
 
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 5.0'
@@ -102,7 +131,14 @@ gem 'turbolinks', '~> 2.5.4'
 gem 'jquery-turbolinks', '2.0.2'
 
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
-gem 'jbuilder', '~> 1.2'
+# jbuilder 1.5.3 (resolved from `~> 1.2` unpinned) references the
+# `Mime::JSON` constant directly, which Rails 5 removed in favor of
+# `Mime[:json]` (the whole `Mime::TYPE` constant-per-type scheme was
+# replaced with `Mime::Type.lookup_by_extension`) — boot fails with
+# `NameError: uninitialized constant Mime::JSON` under Rails 5.2. Bump to the
+# last release still supporting Ruby 2.4 (2.14+ raises the Ruby floor to
+# >= 3.0).
+gem 'jbuilder', '~> 2.11.5'
 
 group :doc do
   # bundle exec rake doc:rails generates the API under doc/api.
@@ -122,12 +158,11 @@ end
 # gem 'debugger', group: [:development, :test]
 
 
-# devise 3.5.10 caps `railties < 5`; bump to the 4.2.x line, which is the
-# newest devise release that still caps `railties < 5.1` (i.e. explicitly
-# supports Rails 5.0 without pulling in 4.4+'s Rails-5.2-era changes ahead of
-# schedule). Task 5 must check whether 4.2.x supports 5.2 or needs a further
-# bump.
-gem 'devise', '~> 4.2.0'
+# devise's `railties` dependency caps below Rails 5.1/5.2 through 4.2.x
+# (`< 5.1, >= 4.1.0` on 4.2.1) — that cap, not a `responders` conflict, is
+# what actually broke `bundle lock` on the previous hop's Gemfile.next.
+# 4.6.x raises the cap to `< 6.0` and leaves `responders` unconstrained.
+gem 'devise', '~> 4.6.0'
 
 #gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
 gem "foundation-rails",'5.2.1.0'
@@ -138,23 +173,37 @@ gem "mini_magick"
 gem "select2-rails", '3.5.4'
 #gem "cancan"
 gem 'cancancan', '~> 1.7'
-gem "omniauth-google-oauth2"
-# ransack unpinned resolves to a release requiring Ruby >= 2.6 (above this
-# repo's Ruby 2.3 ceiling) and, from 2.3.1 on, activerecord >= 5.2.1 (above
-# Rails 5.0). 2.3.0 is the one release compatible with both ceilings
-# (activerecord >= 5.0, no upper bound; ruby >= 1.9). Task 5 should check
-# whether a newer ransack release becomes viable once Ruby bumps to 2.4.
-gem 'ransack', '2.3.0'
+# Unpinned, omniauth-google-oauth2 resolves to a 1.2.x release that both
+# needs Ruby >= 2.5 (above this hop's Ruby 2.4 ceiling) and depends on
+# `omniauth ~> 2.0` (incompatible with the `omniauth ~> 1.9` pin above,
+# itself needed for this app's still-1.x-shaped omniauth strategies). Pin to
+# 0.8.2, the last release whose own `omniauth` dependency is `~> 1.1`.
+gem 'omniauth-google-oauth2', '0.8.2'
+# ransack 2.3.1+ needs `activerecord >= 5.2.1` (satisfied now that Rails
+# resolves to a 5.2.x patch) and folded the separate `polyamorous` gem into
+# ransack itself as of 2.4.0. Pinned to the exact patch 2.4.1 — `~> 2.4.0`
+# would also match 2.4.2, which raises the Ruby floor to >= 2.6 (above this
+# hop's Ruby 2.4 ceiling).
+gem 'ransack', '2.4.1'
 gem "will_paginate"
 gem "cocoon"
-gem 'wicked_pdf', '0.9.10'
+# wicked_pdf 0.9.10's PdfHelper module uses `alias_method_chain`, which Rails
+# 5.1 removed outright (`NoMethodError: undefined method 'alias_method_chain'
+# for ActionController::Base:Class` on boot). Bump to the first release that
+# drops it; the roadmap's full wicked_pdf/wkhtmltopdf-binary replacement
+# discussion (Task 11) is still deferred — this is only the minimum bump to
+# keep booting under Rails 5.2.
+gem 'wicked_pdf', '~> 2.1.0'
 gem 'wkhtmltopdf-binary' # bundle the binary so there's no system-level wkhtmltopdf dependency
 gem 'friendly_id', '~> 5.0.0'
-# doorkeeper 1.1.0 only requires `railties >= 3.1` (no upper cap) and still
-# boots/works under Rails 5.0 — left unbumped; a full doorkeeper 1.1 -> 5.x
-# OAuth-server migration is roadmap Task 10, not this hop. Task 5 should
-# re-verify it still boots under 5.2.
-gem 'doorkeeper', '1.1.0'
+# doorkeeper was bumped 1.1.0 -> 4.4.3 in the 5.2 hop purely to unblock boot
+# (1.1.0's own controllers used `before_filter`, which Rails 5.1 removed
+# outright, and doorkeeper didn't switch to `before_action` until 4.0.0).
+# This hop should re-check whether 4.4.3 still boots under Rails 6.0 (its
+# `railties >= 4.2` dependency has no upper cap, so it likely does) — the
+# full doorkeeper -> 5.x OAuth-server migration (token model/table changes,
+# `previous_refresh_token`, PKCE, etc.) stays scoped to roadmap Task 10.
+gem 'doorkeeper', '~> 4.4.3'
 
 gem "omniauth-oauth2"#, '1.0.2'
 #gem 'omniauth-fluxapp' , :path => '/home/tp/Desktop/flux'
@@ -162,9 +211,10 @@ gem 'omniauth-fluxapp' , :git  => 'https://github.com/stpnlr/omniauth-fluxapp.gi
 gem 'tzinfo-data'
 
 group :test do
-  # Ruby 2.3 ceiling: simplecov >= 0.18 requires Ruby >= 2.4/2.5, so pin to the
-  # last release supporting Ruby 2.3. Revisit once the Ruby ramp (§3) lands.
-  gem 'simplecov', '~> 0.17.1', require: false
+  # Ruby 2.4 floor carried over from the 5.2 hop: simplecov 0.18.x is the
+  # last line supporting Ruby 2.4 (0.19+ needs Ruby >= 2.5). Bump once this
+  # hop's Ruby upgrade (2.4 -> 2.6/2.7) actually lands.
+  gem 'simplecov', '~> 0.18.5', require: false
 
   # Rails 5.0 extracted `assigns`/`assert_template` out of Action Controller;
   # several controller tests use `assigns`, so pull them back in explicitly.

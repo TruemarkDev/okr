@@ -9,7 +9,7 @@ class User < ApplicationRecord
   has_many :project_managers
   has_many :projects, :through => :project_managers
   has_many :team_members
-  has_many :teams, -> { uniq }, :through => :team_members
+  has_many :teams, -> { distinct }, :through => :team_members
   has_many :admin_teams, :through => :projects, :source => :teams
   has_many :leads, -> { where role: 'lead' }, class_name: 'TeamMember'
   has_many :admin_teams, :through => :leads, :source => :team #,:foreign_key=>'user_id'
@@ -25,7 +25,7 @@ class User < ApplicationRecord
   has_many :tasks #authored ones
   has_many :objectives, :through => :okrs
   has_many :key_results, :through => :objectives
-  has_many :assignments, -> { uniq }, :through => :key_results, :source => :tasks
+  has_many :assignments, -> { distinct }, :through => :key_results, :source => :tasks
   has_many :managers, :through => :reporting_managers, :class_name => 'User'
   has_many :reporting_employees, :class_name => "ReportingManager", :foreign_key => "manager_id"
   has_many :users, :through => :reporting_employees, :class_name => 'User', :foreign_key => "user_id"

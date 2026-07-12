@@ -21,30 +21,30 @@ class WorkLogsControllerTest < ActionController::TestCase
     # WorkLog validates presence of task_id and that date is within the last 6
     # days, so supply both for the create-success path.
     assert_difference('WorkLog.count') do
-      post :create, work_log: { end_time: @work_log.end_time, is_deleted: @work_log.is_deleted, name: @work_log.name, start_time: @work_log.start_time, task_id: @work_log.task_id, date: Date.today, user_id: @work_log.user_id }
+      post :create, params: { work_log: { end_time: @work_log.end_time, is_deleted: @work_log.is_deleted, name: @work_log.name, start_time: @work_log.start_time, task_id: @work_log.task_id, date: Date.today, user_id: @work_log.user_id } }
     end
 
     assert_redirected_to work_log_path(assigns(:work_log))
   end
 
   test "should show work_log" do
-    get :show, id: @work_log
+    get :show, params: { id: @work_log }
     assert_response :success
   end
 
   test "should get edit" do
-    get :edit, id: @work_log
+    get :edit, params: { id: @work_log }
     assert_response :success
   end
 
   test "should update work_log" do
-    patch :update, id: @work_log, work_log: { end_time: @work_log.end_time, is_deleted: @work_log.is_deleted, name: @work_log.name, start_time: @work_log.start_time, task: @work_log.task, user_id: @work_log.user_id }
+    patch :update, params: { id: @work_log, work_log: { end_time: @work_log.end_time, is_deleted: @work_log.is_deleted, name: @work_log.name, start_time: @work_log.start_time, task: @work_log.task, user_id: @work_log.user_id } }
     assert_redirected_to work_log_path(assigns(:work_log))
   end
 
   test "should destroy work_log" do
     assert_difference('WorkLog.count', -1) do
-      delete :destroy, id: @work_log
+      delete :destroy, params: { id: @work_log }
     end
 
     # Signed-in admin is a manager, so destroy redirects to the worklogs report.
@@ -60,8 +60,8 @@ class WorkLogsControllerTest < ActionController::TestCase
   end
 
   test "create sets user to current_user and derives minutes from hours and mins" do
-    post :create, work_log: { name: 'x', task_id: 1, date: Date.today,
-                              hours: '1', mins: '30' }
+    post :create, params: { work_log: { name: 'x', task_id: 1, date: Date.today,
+                              hours: '1', mins: '30' } }
     assert_equal users(:admin).id, assigns(:work_log).user_id
     assert_equal 90, assigns(:work_log).minutes
   end
@@ -69,20 +69,20 @@ class WorkLogsControllerTest < ActionController::TestCase
   test "owner destroy of a recent log takes the owner branch (no manager flash)" do
     # admin owns work_log one and it is dated today, so the owner+recent branch
     # wins over the manager branch: it destroys silently, without the flash.
-    delete :destroy, id: @work_log
+    delete :destroy, params: { id: @work_log }
     assert_nil flash[:notice]
     assert_nil WorkLog.find_by_id(@work_log.id)
   end
 
   test "delete_request flags the log when requested by its owner" do
-    post :delete_request, id: @work_log
+    post :delete_request, params: { id: @work_log }
     assert @work_log.reload.delete_request
     assert_redirected_to reports_worklogs_path
   end
 
   test "ignore_request clears the delete_request flag for a manager" do
     @work_log.update_attribute(:delete_request, true)
-    post :ignore_request, id: @work_log
+    post :ignore_request, params: { id: @work_log }
     assert_not @work_log.reload.delete_request
     assert_redirected_to reports_worklogs_path
   end

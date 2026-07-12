@@ -40,13 +40,13 @@ class ReportsController < ApplicationController
     @date ||= Date.today
     @tasks=Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
     if @report_type == 'project'
-      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?) && project_id = ?', @date.end_of_day, @date.beginning_of_day, @users.collect(&:id), @project.id).uniq
+      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?) && project_id = ?', @date.end_of_day, @date.beginning_of_day, @users.collect(&:id), @project.id).distinct
       grouped_tasks = tasks.group_by(&:user_ids)
     elsif @report_type == 'team'
-      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?) && team_id = ?', @date.end_of_day, @date.beginning_of_day, @users.collect(&:id), @team.id).uniq
+      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?) && team_id = ?', @date.end_of_day, @date.beginning_of_day, @users.collect(&:id), @team.id).distinct
       grouped_tasks = tasks.group_by(&:user_ids)
     else
-      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @date.end_of_day, @date.beginning_of_day, @users.collect(&:id)).uniq
+      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @date.end_of_day, @date.beginning_of_day, @users.collect(&:id)).distinct
       grouped_tasks = tasks.group_by(&:user_ids)
     end
     grouped_tasks.keys.each { |x| x.each { |y| @tasks[y]=grouped_tasks[x] } }
@@ -111,13 +111,13 @@ class ReportsController < ApplicationController
     @end_date ||= Date.today.end_of_month
     @tasks= {} #Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
     if @report_type == 'project'
-      tasks = Task.joins(:key_results).where('project_id = ? && tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @project.id, @end_date.end_of_day, @start_date.beginning_of_day, @users.collect(&:id)).includes(:users).uniq
+      tasks = Task.joins(:key_results).where('project_id = ? && tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @project.id, @end_date.end_of_day, @start_date.beginning_of_day, @users.collect(&:id)).includes(:users).distinct
       grouped_tasks = tasks.group_by(&:user_ids)
     elsif @report_type == 'team'
-      tasks = Task.joins(:key_results).where('team_id = ? && tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @team.id, @end_date.end_of_day, @start_date.beginning_of_day, @users.collect(&:id)).includes(:users).uniq
+      tasks = Task.joins(:key_results).where('team_id = ? && tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @team.id, @end_date.end_of_day, @start_date.beginning_of_day, @users.collect(&:id)).includes(:users).distinct
       grouped_tasks = tasks.group_by(&:user_ids)
     else
-      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @end_date.end_of_day, @start_date.beginning_of_day, @users.collect(&:id)).includes(:users).uniq
+      tasks = Task.joins(:key_results).where('tasks.start_date <= ? && tasks.end_date >= ? && key_results.user_id in (?)', @end_date.end_of_day, @start_date.beginning_of_day, @users.collect(&:id)).includes(:users).distinct
       grouped_tasks = tasks.group_by(&:user_ids)
     end
     grouped_tasks.keys.each { |x| x.each { |y| @tasks[y]= @tasks[y].to_i + grouped_tasks[x].length } }

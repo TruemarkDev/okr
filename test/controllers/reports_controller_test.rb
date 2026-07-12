@@ -38,7 +38,7 @@ class ReportsControllerTest < ActionController::TestCase
   end
 
   test "employees_daily project report type resolves the project" do
-    get :employees_daily, report: { type: 'project', project_id: 1 }
+    get :employees_daily, params: { report: { type: 'project', project_id: 1 } }
     assert_response :success
     assert_equal 'project', assigns(:report_type)
     assert_equal 1, assigns(:project).id
@@ -57,7 +57,7 @@ class ReportsControllerTest < ActionController::TestCase
   # ---- employee_day ----------------------------------------------------------
 
   test "employee_day defaults user to first accessible and given date" do
-    get :employee_day, start_date: '2000-01-01'
+    get :employee_day, params: { start_date: '2000-01-01' }
     assert_response :success
     assert assigns(:user).present?
     assert_equal Date.parse('2000-01-01'), assigns(:date)
@@ -65,7 +65,7 @@ class ReportsControllerTest < ActionController::TestCase
   end
 
   test "employee_day honours explicit employee_id" do
-    get :employee_day, employee_id: users(:admin).id, start_date: '2000-01-01'
+    get :employee_day, params: { employee_id: users(:admin).id, start_date: '2000-01-01' }
     assert_response :success
     assert_equal users(:admin).id, assigns(:user).id
   end
@@ -73,8 +73,8 @@ class ReportsControllerTest < ActionController::TestCase
   # ---- employee_range --------------------------------------------------------
 
   test "employee_range defaults to current month range" do
-    get :employee_range, employee_id: users(:admin).id,
-                         start_date: '2000-01-01', end_date: '2000-01-31'
+    get :employee_range, params: { employee_id: users(:admin).id,
+                         start_date: '2000-01-01', end_date: '2000-01-31' }
     assert_response :success
     assert_equal Date.parse('2000-01-01'), assigns(:start_date)
     assert_equal Date.parse('2000-01-31'), assigns(:end_date)
@@ -84,25 +84,25 @@ class ReportsControllerTest < ActionController::TestCase
   # ---- get_selection_list (js-only template) ---------------------------------
 
   test "get_selection_list project type assigns projects" do
-    xhr :get, :get_selection_list, type: 'project'
+    get :get_selection_list, params: { type: 'project' }, xhr: true
     assert_response :success
     assert_not_nil assigns(:projects)
   end
 
   test "get_selection_list team type assigns teams" do
-    xhr :get, :get_selection_list, type: 'team'
+    get :get_selection_list, params: { type: 'team' }, xhr: true
     assert_response :success
     assert_not_nil assigns(:teams)
   end
 
   test "get_selection_list managing_user type assigns users" do
-    xhr :get, :get_selection_list, type: 'managing_user'
+    get :get_selection_list, params: { type: 'managing_user' }, xhr: true
     assert_response :success
     assert_not_nil assigns(:users)
   end
 
   test "get_selection_list user type renders empty selection" do
-    xhr :get, :get_selection_list, type: 'user'
+    get :get_selection_list, params: { type: 'user' }, xhr: true
     assert_response :success
   end
 
@@ -117,8 +117,8 @@ class ReportsControllerTest < ActionController::TestCase
 
   test "tasks renders project report when user administers a project" do
     users(:admin).update_column(:admin_projects_count, 1)
-    get :tasks, report: { type: 'project', project_id: 1 },
-                start_date: '2000-01-01', end_date: '2000-01-31'
+    get :tasks, params: { report: { type: 'project', project_id: 1 },
+                start_date: '2000-01-01', end_date: '2000-01-31' }
     assert_response :success
     assert_equal 'project', assigns(:report_type)
   end
@@ -126,7 +126,7 @@ class ReportsControllerTest < ActionController::TestCase
   # ---- task ------------------------------------------------------------------
 
   test "task redirects when admin has no admin teams or projects" do
-    get :task, id: 1
+    get :task, params: { id: 1 }
     assert_redirected_to root_path
     assert_equal 'Nothing to show', flash[:alert]
   end
@@ -141,7 +141,7 @@ class ReportsControllerTest < ActionController::TestCase
   test "task with a viewable id renders stats" do
     users(:admin).update_column(:admin_projects_count, 1)
     # filter by a non-existent user so no work-log rows are iterated in the view
-    get :task, id: 1, user_id: 999999
+    get :task, params: { id: 1, user_id: 999999 }
     assert_response :success
     assert_equal 1, assigns(:task).id
     assert_equal 0, assigns(:stats)['users']
@@ -150,8 +150,8 @@ class ReportsControllerTest < ActionController::TestCase
   # ---- employee_tasks --------------------------------------------------------
 
   test "employee_tasks loads task, its users and the selected user" do
-    get :employee_tasks, task_id: 1, user_id: users(:admin).id,
-                         start_date: '2000-01-01', end_date: '2000-01-31'
+    get :employee_tasks, params: { task_id: 1, user_id: users(:admin).id,
+                         start_date: '2000-01-01', end_date: '2000-01-31' }
     assert_response :success
     assert_equal 1, assigns(:task).id
     assert_equal users(:admin).id, assigns(:user).id
@@ -171,7 +171,7 @@ class ReportsControllerTest < ActionController::TestCase
   # ---- worklogs --------------------------------------------------------------
 
   test "worklogs renders for a month with no logs" do
-    get :worklogs, month: 'January', year: '2000'
+    get :worklogs, params: { month: 'January', year: '2000' }
     assert_response :success
     assert_equal 'all_users', assigns(:report_type)
     assert_equal Date.parse('2000-01-01'), assigns(:start_date)
@@ -194,7 +194,7 @@ class ReportsControllerTest < ActionController::TestCase
   end
 
   test "day_log resolves user by employee_code" do
-    get :day_log, user_id: 'ADMIN001', date: '2000-01-01'
+    get :day_log, params: { user_id: 'ADMIN001', date: '2000-01-01' }
     assert_response :success
     assert assigns(:user).present?
     assert_equal Date.parse('2000-01-01'), assigns(:date)
@@ -210,7 +210,7 @@ class ReportsControllerTest < ActionController::TestCase
   end
 
   test "assignments honours user_id within accessible users" do
-    get :assignments, user_id: users(:admin).id
+    get :assignments, params: { user_id: users(:admin).id }
     assert_response :success
     assert_equal users(:admin).id, assigns(:user).id
   end
@@ -235,7 +235,7 @@ class ReportsControllerTest < ActionController::TestCase
 
   test "okrs as employee redirects when requesting an inaccessible user" do
     sign_in employee
-    get :okrs, employee_id: users(:admin).id
+    get :okrs, params: { employee_id: users(:admin).id }
     assert_redirected_to root_path
     assert_equal 'Unauthorized access', flash[:alert]
   end

@@ -33,13 +33,13 @@ class HomeControllerTest < ActionController::TestCase
 
   test "dashboard with a date param raises NameError (parama typo)" do
     assert_raises(NameError) do
-      get :dashboard, date: '2000-01-01'
+      get :dashboard, params: { date: '2000-01-01' }
     end
   end
 
   test "index with a date param raises NameError (via dashboard)" do
     assert_raises(NameError) do
-      get :index, date: '2000-01-01'
+      get :index, params: { date: '2000-01-01' }
     end
   end
 
@@ -48,18 +48,18 @@ class HomeControllerTest < ActionController::TestCase
   test "search redirects to the task when tracker_id matches" do
     # tasks(:one) has tracker_id 'MyString' and is authored by admin, so it is
     # searchable for the admin user.
-    get :search, search: { keyword: 'MyString' }
+    get :search, params: { search: { keyword: 'MyString' } }
     assert_redirected_to controller: 'tasks', action: 'show', id: 'MyString'
   end
 
   test "search renders results when nothing matches by tracker_id" do
-    get :search, search: { keyword: 'no-such-tracker-zzz' }
+    get :search, params: { search: { keyword: 'no-such-tracker-zzz' } }
     assert_response :success
     assert_not_nil assigns(:tasks)
   end
 
   test "search works over POST as well" do
-    post :search, search: { keyword: 'no-such-tracker-zzz' }
+    post :search, params: { search: { keyword: 'no-such-tracker-zzz' } }
     assert_response :success
     assert_not_nil assigns(:tasks)
   end

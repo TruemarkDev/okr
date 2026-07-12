@@ -19,30 +19,30 @@ class TasksControllerTest < ActionController::TestCase
 
   test "should create task" do
     assert_difference('Task.count') do
-      post :create, task: { comments_count: @task.comments_count, description: @task.description, end_date: @task.end_date, name: @task.name, project_id: @task.project_id, start_date: @task.start_date, team_id: @task.team_id, tracker_id: @task.tracker_id, user_id: @task.user_id }
+      post :create, params: { task: { comments_count: @task.comments_count, description: @task.description, end_date: @task.end_date, name: @task.name, project_id: @task.project_id, start_date: @task.start_date, team_id: @task.team_id, tracker_id: @task.tracker_id, user_id: @task.user_id } }
     end
 
     assert_redirected_to task_path(assigns(:task))
   end
 
   test "should show task" do
-    get :show, id: @task
+    get :show, params: { id: @task }
     assert_response :success
   end
 
   test "should get edit" do
-    get :edit, id: @task
+    get :edit, params: { id: @task }
     assert_response :success
   end
 
   test "should update task" do
-    patch :update, id: @task, task: { comments_count: @task.comments_count, description: @task.description, end_date: @task.end_date, name: @task.name, project_id: @task.project_id, start_date: @task.start_date, team_id: @task.team_id, tracker_id: @task.tracker_id, user_id: @task.user_id }
+    patch :update, params: { id: @task, task: { comments_count: @task.comments_count, description: @task.description, end_date: @task.end_date, name: @task.name, project_id: @task.project_id, start_date: @task.start_date, team_id: @task.team_id, tracker_id: @task.tracker_id, user_id: @task.user_id } }
     assert_redirected_to task_path(assigns(:task))
   end
 
   test "should destroy task" do
     assert_difference('Task.count', -1) do
-      delete :destroy, id: @task
+      delete :destroy, params: { id: @task }
     end
 
     assert_redirected_to tasks_path
@@ -54,7 +54,7 @@ class TasksControllerTest < ActionController::TestCase
     # Task.count drops (default_scope hides is_deleted) but no row is removed.
     assert_no_difference('Task.unscoped.count') do
       assert_difference('Task.count', -1) do
-        delete :destroy, id: @task
+        delete :destroy, params: { id: @task }
       end
     end
   end
@@ -76,7 +76,7 @@ class TasksControllerTest < ActionController::TestCase
   end
 
   test "show assigns team, project, sub_tasks and a new comment" do
-    get :show, id: @task
+    get :show, params: { id: @task }
     assert_response :success
     assert_equal @task.team, assigns(:team)
     assert_equal @task.team.project, assigns(:project)
@@ -85,15 +85,15 @@ class TasksControllerTest < ActionController::TestCase
   end
 
   test "new prefilled with team when team_id given" do
-    get :new, team_id: teams(:one).id
+    get :new, params: { team_id: teams(:one).id }
     assert_response :success
     assert_equal teams(:one).id, assigns(:task).team_id
     assert_equal teams(:one).project_id, assigns(:task).project_id
   end
 
   test "create derives project_id from the chosen team" do
-    post :create, task: { name: 'X', description: 'd', start_date: Time.now,
-                          end_date: Time.now, team_id: teams(:one).id, user_id: 1 }
+    post :create, params: { task: { name: 'X', description: 'd', start_date: Time.now,
+                          end_date: Time.now, team_id: teams(:one).id, user_id: 1 } }
     assert_equal teams(:one).project_id, assigns(:task).project_id
   end
 
@@ -105,7 +105,7 @@ class TasksControllerTest < ActionController::TestCase
     # for any requested format (see Rails 5.0 release notes: "implicit
     # rendering"). Pin the new, correct-for-5.0 behavior.
     assert_raises(ActionController::UnknownFormat) do
-      post :completion, id: @task.id, task: { completed_on: Time.now.to_s }
+      post :completion, params: { id: @task.id, task: { completed_on: Time.now.to_s } }
     end
     @task.reload
     assert_equal 'completed', @task.status
