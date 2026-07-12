@@ -41,7 +41,7 @@ class OauthApplicationTest < ActiveSupport::TestCase
 
   test "user_ids= assigns the join through the has_many :through" do
     app = build_app.tap(&:save!)
-    app.update_attributes('user_ids' => [users(:admin).id])
+    app.update('user_ids' => [users(:admin).id])
     assert_equal [users(:admin).id], app.reload.user_ids
   end
 

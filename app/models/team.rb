@@ -18,7 +18,7 @@ class Team < ApplicationRecord
   after_save :update_project_team_count
 
   def update_project_team_count
-    project.update_attributes(:team_count => project.teams.active.count)
+    project.update(:team_count => project.teams.active.count)
   end
 
   def self.for_user(user)

@@ -119,7 +119,7 @@ class TasksController < ApplicationController
   def completion
     @task = Task.find(params[:id])
     if request.post?
-      @task.update_attributes(:completed_on => params[:task][:completed_on].to_time, :status => 'completed') if (params[:task] && params[:task][:completed_on])
+      @task.update(:completed_on => params[:task][:completed_on].to_time, :status => 'completed') if (params[:task] && params[:task][:completed_on])
     end
   end
 

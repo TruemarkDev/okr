@@ -4,7 +4,7 @@ require 'test_helper'
 class TaskTest < ActiveSupport::TestCase
 
   # Build a valid, saveable task. Task#update_team_task_count (after_save) calls
-  # team.update_attributes, so a real team association is required or save blows up.
+  # team.update, so a real team association is required or save blows up.
   def build_task(attrs = {})
     Task.new({
       name: 'Char Task',
@@ -140,13 +140,13 @@ class TaskTest < ActiveSupport::TestCase
   test "moving status active -> completed stamps completed_on" do
     t = build_task(status: 'active'); t.save!
     assert_nil t.completed_on
-    t.update_attributes(status: 'completed')
+    t.update(status: 'completed')
     assert_not_nil t.completed_on
   end
 
   test "moving status completed -> active clears completed_on" do
     t = build_task(status: 'completed', completed_on: Time.now); t.save!
-    t.update_attributes(status: 'active')
+    t.update(status: 'active')
     assert_nil t.completed_on
   end
 

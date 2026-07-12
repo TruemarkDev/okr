@@ -71,7 +71,7 @@ class OkrsController < ApplicationController
   def approve
     @okr= Okr.find(params[:id])
     if (current_user.user_ids.include?(@okr.user_id) || current_user.manager?)
-      @okr.update_attributes(:approved=>true)
+      @okr.update(:approved=>true)
     end
   end
 

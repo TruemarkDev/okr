@@ -21,11 +21,11 @@ class Project < ApplicationRecord
   end
 
   def update_user_project_count(pm)
-    pm.update_attributes(:admin_projects_count=>pm.projects.count)
+    pm.update(:admin_projects_count=>pm.projects.count)
   end
 
   def update_numbers
-    update_attributes(:team_count=>self.teams.count)
+    update(:team_count=>self.teams.count)
   end
 
   def destroy

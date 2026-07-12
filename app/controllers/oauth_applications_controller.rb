@@ -38,7 +38,7 @@ class OauthApplicationsController < ApplicationController
     @user_ids =  oauth_application_params[:user_ids]
     respond_to do |format|
       if @oauth_application.save
-        OauthApplication.find(@oauth_application.id).update_attributes('user_ids'=>oauth_application_params[:user_ids])
+        OauthApplication.find(@oauth_application.id).update('user_ids'=>oauth_application_params[:user_ids])
         format.html { redirect_to oauth_application_path(@oauth_application), notice: 'Oauth application was successfully created.' }
         format.json { render action: 'show', status: :created, location: @oauth_application }
       else
@@ -53,7 +53,7 @@ class OauthApplicationsController < ApplicationController
   def update
     respond_to do |format|
       if @oauth_application.update(oauth_application_params.except('user_ids'))
-        OauthApplication.find(@oauth_application.id).update_attributes('user_ids'=>oauth_application_params[:user_ids])
+        OauthApplication.find(@oauth_application.id).update('user_ids'=>oauth_application_params[:user_ids])
         format.html { redirect_to oauth_application_path(@oauth_application), notice: 'Oauth application was successfully updated.' }
         format.json { head :no_content }
       else

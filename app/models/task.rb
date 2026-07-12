@@ -55,7 +55,7 @@ class Task < ApplicationRecord
 
 
   def update_team_task_count
-    team.update_attributes(:pending_tasks => team.tasks.active.pending.count)
+    team.update(:pending_tasks => team.tasks.active.pending.count)
   end
 
   def add_tracker_id

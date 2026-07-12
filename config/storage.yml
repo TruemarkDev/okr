@@ -1,0 +1,17 @@
+# This app does not use Active Storage (uploads go through CarrierWave +
+# MiniMagick, see app/uploaders/). Rails 6.1's Zeitwerk eager loader
+# (`bin/rails zeitwerk:check`, and `config.eager_load = true` in production)
+# now eager-loads the bundled `active_storage` engine's own `app/models`
+# directory as part of the main app's autoload run, which requires
+# `active_storage/blob.rb`, which in turn expects this file to exist at boot
+# (even though nothing in this app ever calls `Rails.application.config
+# .active_storage.service`). Added as a minimal, unused stock config purely
+# to satisfy that requirement — the `test`/`local` Disk services below are
+# never referenced by any model/controller in this app.
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>

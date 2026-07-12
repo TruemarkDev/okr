@@ -66,7 +66,7 @@ class TeamTest < ActiveSupport::TestCase
     archived = Team.create!(name: "Archived Team", code: "ARCT2", project_id: project.id, status: "archived")
 
     assert_equal 1, project.reload.team_count
-    archived.update_attributes(status: "active")
+    archived.update(status: "active")
     assert_equal 2, project.reload.team_count
   end
 

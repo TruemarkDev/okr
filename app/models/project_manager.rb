@@ -8,7 +8,7 @@ class ProjectManager < ApplicationRecord
   after_destroy  :update_numbers
 
   def update_numbers
-    user.update_attributes(:admin_projects_count=>user.projects.count)
-    #update_attributes(:team_count=>self.teams.count)
+    user.update(:admin_projects_count=>user.projects.count)
+    #update(:team_count=>self.teams.count)
   end
 end
