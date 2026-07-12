@@ -1,14 +1,13 @@
 name: CI
 
 # Dual-boot CI (FastRuby methodology, roadmap Task 2): every push/PR runs the
-# Minitest suite twice — once against the current Gemfile (Rails 5.2, promoted
-# from Gemfile.next by Task 5; must stay green) and once against Gemfile.next
-# (the in-progress next hop target, Rails 6.0 per Task 6, the Zeitwerk
-# autoloader rewrite — not yet started and allowed to fail until that hop
-# lands).
+# Minitest suite twice — once against the current Gemfile (Rails 6.0, promoted
+# from Gemfile.next by Task 6; must stay green) and once against Gemfile.next
+# (the in-progress next hop target, Rails 6.1 per Task 7 — not yet started and
+# allowed to fail until that hop lands).
 #
 # Both legs boot the app the same way local dev does: Dockerfile.development
-# (Ruby 2.4 via the brightbox PPA, bumped from 2.3 as part of roadmap Task 5)
+# (Ruby 2.7 via the brightbox PPA, bumped from 2.4 as part of roadmap Task 6)
 # against a MySQL 5.6 service, matching docker-compose.yml.
 
 on:

@@ -10,16 +10,16 @@ Bundler.require(:default, Rails.env)
 module Fluxday
   class Application < Rails::Application
     # Dual-boot scaffold (see Gemfile / Gemfile.next): this app can boot against
-    # either the current Gemfile (Rails 5.2, promoted from Gemfile.next by
-    # roadmap Task 5) or Gemfile.next (the next hop target, Rails 6.0 per
-    # Task 6) depending on BUNDLE_GEMFILE. Use `NextRails.next?` / `.current?`
+    # either the current Gemfile (Rails 6.0, promoted from Gemfile.next by
+    # roadmap Task 6) or Gemfile.next (the next hop target, Rails 6.1 per
+    # Task 7) depending on BUNDLE_GEMFILE. Use `NextRails.next?` / `.current?`
     # (from the `next_rails` gem) anywhere config or app code needs to branch
     # between the two during a version hop, e.g.:
     #
     #   if NextRails.next?
-    #     # Rails 6.0-only config
+    #     # Rails 6.1-only config
     #   else
-    #     # Rails 5.2-only config
+    #     # Rails 6.0-only config
     #   end
     #
     # No branch was needed for the 4.1 -> 4.2 hop (Task 3) — the `responders`
@@ -31,10 +31,24 @@ module Fluxday
     # needed no config.rb branch either — every change (gem bumps, controller/
     # test renames, `.uniq` -> `.distinct`, the `current_url` helper fix, the
     # CarrierWave `image_tag(...).url` fixes) worked identically on both
-    # Gemfiles once landed. Task 6 (Zeitwerk) is very likely to need a real
-    # branch here — Zeitwerk enforces file/constant naming that classic
-    # autoloading didn't, so expect `config.autoloader` or eager-load-path
-    # differences between the two Gemfiles while that hop is in progress.
+    # Gemfiles once landed. Task 6 (5.2 -> 6.0, Zeitwerk) needed exactly one
+    # branch, `config.load_defaults 6.0` below, while Gemfile.next was still
+    # Rails 6.0 and the promoted Gemfile was Rails 5.2 — now that Gemfile.next
+    # has been promoted, that branch has been removed and `load_defaults 6.0`
+    # applies unconditionally (both Gemfile and the new Gemfile.next run
+    # Rails 6.0+, so there's nothing left to gate for that particular flag).
+    # The 6.0 -> 6.1 hop (Task 7) doesn't have a known forcing config change
+    # yet (see Gemfile.next's scaffold comment) — add a `NextRails.next?`
+    # branch here if/when one turns out to be needed.
+
+    # `config.load_defaults 6.0` is what actually turns on Zeitwerk
+    # (autoloader defaults to :classic unless a 6.0+ `load_defaults` is set,
+    # for backward compat with apps that never opted in). This app never
+    # called `load_defaults` at all before this hop (Task 6, roadmap Rails
+    # 5.2 -> 6.0). See config/initializers/new_framework_defaults_6_0.rb for
+    # the itemized walk of every other flag this bumps and why each one is
+    # deliberately left pinned to its pre-6.0 behavior for now.
+    config.load_defaults 6.0
 
     # Rails 5.0 makes `belongs_to` required-by-default. This app was written
     # against the old optional-by-default behavior and has never validated
