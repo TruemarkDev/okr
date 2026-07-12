@@ -1,4 +1,4 @@
-class KeyResult < ActiveRecord::Base
+class KeyResult < ApplicationRecord
   belongs_to :user
   belongs_to :objective
   #has_many :tasks

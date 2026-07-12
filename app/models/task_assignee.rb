@@ -1,4 +1,4 @@
-class TaskAssignee < ActiveRecord::Base
+class TaskAssignee < ApplicationRecord
   belongs_to :task
   belongs_to :user
 

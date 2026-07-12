@@ -1,4 +1,4 @@
-class WorkLog < ActiveRecord::Base
+class WorkLog < ApplicationRecord
   belongs_to :user
   belongs_to :task
 

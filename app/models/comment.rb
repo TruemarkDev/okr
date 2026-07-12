@@ -1,4 +1,4 @@
-class Comment < ActiveRecord::Base
+class Comment < ApplicationRecord
   belongs_to :user
   belongs_to :source, :polymorphic=>true
   scope :active, -> {where(is_deleted: false)}

@@ -1,4 +1,4 @@
-class Project < ActiveRecord::Base
+class Project < ApplicationRecord
   mount_uploader :image, ImageUploader
   has_many :teams
   has_many :tasks

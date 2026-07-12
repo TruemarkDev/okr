@@ -1,4 +1,4 @@
-class Team < ActiveRecord::Base
+class Team < ApplicationRecord
   belongs_to :project
   has_many :team_members
   has_many :tasks

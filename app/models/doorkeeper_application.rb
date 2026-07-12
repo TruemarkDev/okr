@@ -1,2 +1,2 @@
-class DoorkeeperApplication < ActiveRecord::Base
+class DoorkeeperApplication < ApplicationRecord
 end

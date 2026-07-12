@@ -1,4 +1,4 @@
-class ProjectManager < ActiveRecord::Base
+class ProjectManager < ApplicationRecord
   belongs_to :project
   belongs_to :user
   default_scope {where.not(status:'archived')}

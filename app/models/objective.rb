@@ -1,4 +1,4 @@
-class Objective < ActiveRecord::Base
+class Objective < ApplicationRecord
   belongs_to :user
   belongs_to :okr
   has_many :key_results

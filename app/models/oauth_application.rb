@@ -1,4 +1,4 @@
-class OauthApplication < ActiveRecord::Base
+class OauthApplication < ApplicationRecord
   has_many :user_oauth_applications
   has_many :users, :through => :user_oauth_applications
   scope :by_name, -> { order("oauth_applications.name ASC") }

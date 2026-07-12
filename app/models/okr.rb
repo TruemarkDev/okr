@@ -1,4 +1,4 @@
-class Okr < ActiveRecord::Base
+class Okr < ApplicationRecord
   belongs_to :user
   has_many :objectives
   has_many :key_results, :through =>:objectives

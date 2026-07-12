@@ -66,9 +66,13 @@ class TasksControllerTest < ActionController::TestCase
   end
 
   test "completed_index assigns finished tasks but has no template" do
-    # The action runs and assigns, but there is no completed_index view, so
-    # rendering raises MissingTemplate — pin that current behavior.
-    assert_raises(ActionView::MissingTemplate) { get :completed_index }
+    # The action runs and assigns, but there is no completed_index view. Under
+    # Rails 4.2 the implicit-render lookup raised ActionView::MissingTemplate;
+    # Rails 5.0 changed implicit rendering so a request with no matching
+    # template for any format raises ActionController::UnknownFormat instead
+    # (see Rails 5.0 release notes: "implicit rendering" section). Pin the
+    # new, correct-for-5.0 behavior rather than the old exception class.
+    assert_raises(ActionController::UnknownFormat) { get :completed_index }
   end
 
   test "show assigns team, project, sub_tasks and a new comment" do
@@ -95,8 +99,12 @@ class TasksControllerTest < ActionController::TestCase
 
   test "completion action marks the task completed (but has no template)" do
     # completion uses Task.find (not friendly.find), so it needs a numeric id.
-    # The DB update runs before the implicit render, which raises MissingTemplate.
-    assert_raises(ActionView::MissingTemplate) do
+    # The DB update runs before the implicit render. Under Rails 4.2 the
+    # implicit-render lookup raised ActionView::MissingTemplate; Rails 5.0
+    # raises ActionController::UnknownFormat instead when no template exists
+    # for any requested format (see Rails 5.0 release notes: "implicit
+    # rendering"). Pin the new, correct-for-5.0 behavior.
+    assert_raises(ActionController::UnknownFormat) do
       post :completion, id: @task.id, task: { completed_on: Time.now.to_s }
     end
     @task.reload

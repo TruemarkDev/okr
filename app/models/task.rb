@@ -1,4 +1,4 @@
-class Task < ActiveRecord::Base
+class Task < ApplicationRecord
 
   extend FriendlyId
   friendly_id :tracker_id
