@@ -1,5 +1,5 @@
 <ul class="side-nav sidebar-links search-box">
-  <%= form_for :search, :url => {:controller => 'home', :action => 'search'}, :method => 'get' do |f| %>
+  <%= form_for :search, :url => {:controller => '/home', :action => 'search'}, :method => 'get' do |f| %>
       <%= f.text_field :keyword, :class => 'quick-search', :placeholder => 'Tracker id or keyword' %>
   <% end %>
 </ul>
@@ -28,7 +28,7 @@
       <!--</div>-->
     <!--</dd>-->
   <!--</dl>-->
-  <% if current_user.manager? %>
+  <% if user_signed_in? && current_user.manager? %>
       <li><%= link_to raw('<span class="icon icon-oauth-16"></span>OAuth applications'), oauth_applications_path %></li>
   <% end %>
 </ul>

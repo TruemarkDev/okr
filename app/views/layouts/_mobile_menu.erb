@@ -17,7 +17,7 @@
       <!--<li><%#= link_to 'OKR', reports_okrs_path %></li>-->
     <!--</ul>-->
   <!--</li>-->
-  <% if current_user.manager? %>
+  <% if user_signed_in? && current_user.manager? %>
       <li><%= link_to raw('<span class="icon icon-oauth-16"></span>OAuth applications'), oauth_applications_path %></li>
   <% end %>
   <% if user_signed_in? %>
