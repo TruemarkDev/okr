@@ -108,4 +108,40 @@ in the Gemfile in place of `uglifier`). Don't reintroduce `uglifier`.
   accidentally introducing a non-Rails-way abstraction.
 - Do not commit or push unless explicitly asked.
 
+## Local (non-Docker) dev environment — known gotchas
+
+Running this app locally without Docker (mise-managed Ruby 3.3.11, brew MySQL) surfaced a
+few things worth knowing before you re-derive them:
+
+- `config/database.yml` has no defaults and there's no dotenv gem — export `DB_NAME`,
+  `DB_HOST`, `DB_USER`, `DB_PASS` yourself before any `rake`/`rails` invocation. With brew
+  MySQL and a passwordless root user: `DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=root
+  DB_PASS=""`.
+- **`config/initializers/sass_index_compat.rb` is load-bearing — do not remove it casually.**
+  It patches `Sass::Script::Functions#index` to return `false` instead of Sass `null` for
+  "not found." Foundation 5's `exports()` mixin (`foundation/_functions.scss`) is gated on
+  `index($modules, $name) == false`; this app's `sass` gem (3.7.4) returns `null` there
+  instead, so without the patch nearly all of Foundation's CSS (grid/top-bar/dropdown/forms/
+  buttons/panels/off-canvas) silently fails to render — while every asset request still
+  200s, so it looks like a design/CSS bug, not a missing-file bug. Verify by curling a
+  `foundation_and_overrides*.css` asset and checking for `.row {`.
+- **Turbolinks 2.5.4's `URI.escape` crash is fixed** by
+  `config/initializers/turbolinks_uri_escape_compat.rb` (Ruby 3.0 removed `URI.escape`,
+  which `Turbolinks::XDomainBlocker#same_origin?` called on every redirect reached through
+  Turbolinks' own XHR-driven navigation — `X-XHR-Referer` header present). A raw `curl`
+  test won't reproduce the original bug; repro/verify with
+  `curl -H "X-XHR-Referer: <url>"` against a redirecting action. Don't remove the initializer.
+- `tmp/cache/assets` / `.sass-cache` can serve stale compiled CSS/JS across unrelated
+  changes — `rm -rf tmp/cache/assets .sass-cache` and restart the server if an asset edit
+  doesn't seem to take effect, before concluding the fix is wrong.
+- `db/seeds.rb` should stay written with `find_or_create_by!` (idempotent, raises loudly on
+  a real validation failure) rather than bare `create` — the latter silently no-ops on
+  failure with zero output, which is how the admin login previously went missing without
+  any error.
+- **`bd create`/`bd close` auto-route to the wrong repo by default in this checkout** —
+  writes go to `repos.additional` (`~/.beads-planning`) instead of the primary `.` repo,
+  surfacing as `database not initialized: issue_prefix config is missing` even though
+  `bd context` shows the primary repo's own DB is fine. Pass `bd create --repo .`
+  explicitly; `bd show`/`bd close <id>` resolve correctly by ID prefix with no flag needed.
+
 Propose the **simplest correct change that looks like the code already there.**

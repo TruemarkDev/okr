@@ -202,12 +202,25 @@ gem 'jbuilder', '~> 2.15.1'
 # method from `ActiveSupport::Dependencies` entirely -- `NoMethodError`
 # the moment `devise.rb` loads (`Devise.mailer = ...`). Fixed at 4.8.0,
 # which guards the call with
-# `if ActiveSupport::Dependencies.respond_to?(:reference)`. Bumped to the
-# last 4.x release (5.0.x changes enough -- new
-# `Devise::Test::IntegrationHelpers` defaults, dropped Rails < 6.1 support
-# -- that a same-major bump is the lower-risk choice here). Re-verified
-# against Rails 7.1/7.2/8.0 (Task 9) -- unchanged, still resolves and passes.
-gem 'devise', '~> 4.9.4'
+# `if ActiveSupport::Dependencies.respond_to?(:reference)`. Stayed on the
+# 4.x line through Task 9 (5.0's dropped-Rails-<6.1-support floor and
+# `Devise::Test::IntegrationHelpers` changes made a same-major bump the
+# lower-risk call while Rails itself was still climbing).
+#
+# Bumped to 5.0.4 now that Rails is settled at 8.0 (the Rails-floor reason
+# is gone) -- checked the 5.0 CHANGELOG for this app's actual surface:
+# no change to Devise::OmniauthCallbacksController or omniauth integration
+# (this app's `omniauth ~> 1.9` pin is untouched by this bump); the
+# `Devise::Test::IntegrationHelpers` change is the removal of the
+# positional `sign_in(resource, :scope)` test-helper arg -- this app's
+# `sign_in`/`sign_out` calls are all single-arg, so no test changes needed.
+# The one real code change: `devise_error_messages!` was removed from all
+# generated views in favor of `render "devise/shared/error_messages",
+# resource: resource` (Devise still ships that partial, so no local copy
+# needed) -- updated across the 6 custom devise views that used it.
+# 5.0.1-5.0.4 also carry two security fixes (open-redirect in FailureApp
+# via Referer; a confirmable email-change race) worth having regardless.
+gem 'devise', '~> 5.0.4'
 
 #gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
 gem "foundation-rails",'5.2.1.0'
@@ -275,7 +288,12 @@ gem "cocoon"
 # current forcing function (crash/missing binary/broken output) to justify
 # swapping rendering engines (e.g. to grover/ferrum_pdf), so the gem stays
 # put. Revisit if wkhtmltopdf itself breaks on some future platform.
-gem 'wicked_pdf', '~> 2.1.0'
+#
+# The `~> 2.1.0` pin itself was never load-bearing -- no comment above ever
+# named a reason to cap below 2.x's latest. Loosened to `~> 2.8` (still 2.x,
+# no wicked_pdf major-version jump) once the full suite confirmed it renders
+# the same real PDFs unchanged.
+gem 'wicked_pdf', '~> 2.8'
 gem 'wkhtmltopdf-binary' # bundle the binary so there's no system-level wkhtmltopdf dependency
 # Was pinned `~> 5.0.0`, which (pessimistic operator) only floats 5.0.x
 # patches -- resolved to the years-old 5.0.5 even though the whole 5.x line

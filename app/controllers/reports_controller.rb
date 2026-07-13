@@ -482,10 +482,10 @@ class ReportsController < ApplicationController
     if params[:detailed].present? && params[:detailed]
       @user_logs = Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
       @user_rows = {}
-      worklogs.map { |x| (@user_logs[x.user_id][x.date.day].is_a?(Hash) ? @user_logs[x.user_id][x.date.day]=[] : @user_logs[x.user_id][x.date.day]) << [x.minutes.to_duration, "#{x.task.name} - #{x.description}" ] }
+      worklogs.map { |x| (@user_logs[x.user_id][x.date.day].is_a?(Hash) ? @user_logs[x.user_id][x.date.day]=[] : @user_logs[x.user_id][x.date.day]) << [x.minutes.to_i.to_duration, "#{x.task.name} - #{x.description}" ] }
       @user_logs.each { |k, v| @user_rows[k]=v.values.map { |x| x.length }.max }
     end
-    worklogs.map { |x| @hours[x.user_id][x.date.day]['hours'] = @hours[x.user_id][x.date.day].to_s.to_i + x.minutes;(x.delete_request == true ? @hours[x.user_id][x.date.day]['delete_request'] = true : (x.delete_request == false and @hours[x.user_id][x.date.day]['delete_request'] != true) ? @hours[x.user_id][x.date.day]['delete_request'] = false : @hours[x.user_id][x.date.day]['delete_request'] = true)}
+    worklogs.map { |x| @hours[x.user_id][x.date.day]['hours'] = @hours[x.user_id][x.date.day].to_s.to_i + x.minutes.to_i;(x.delete_request == true ? @hours[x.user_id][x.date.day]['delete_request'] = true : (x.delete_request == false and @hours[x.user_id][x.date.day]['delete_request'] != true) ? @hours[x.user_id][x.date.day]['delete_request'] = false : @hours[x.user_id][x.date.day]['delete_request'] = true)}
     @total = {}
     @average = {}
     @users.map { |u| @total[u.id] = @hours[u.id]['hours'].values.sum }

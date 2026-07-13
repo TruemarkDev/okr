@@ -29,6 +29,44 @@ rake db:create db:migrate db:seed   # seeds an admin@fluxday.io / password user
 rails server                   # http://localhost:3000
 ```
 
+`config/database.yml` has no defaults and this app has no dotenv gem — export `DB_NAME`/
+`DB_HOST`/`DB_USER`/`DB_PASS` yourself before any `rake`/`rails` command when running without
+Docker. Locally with `brew services start mysql` and a passwordless root user, this is:
+
+```bash
+export DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=root DB_PASS=""
+```
+
+### Known runtime gotchas (non-Docker local dev)
+
+- **Do not delete `config/initializers/sass_index_compat.rb`.** It patches
+  `Sass::Script::Functions#index` to return `false` (not Sass `null`) when a value isn't
+  found. Without it, Foundation 5's own `exports()` mixin (`foundation/_functions.scss`,
+  gated on `index($modules, $name) == false`) silently drops almost all of Foundation's CSS —
+  grid, top-bar, dropdown, forms, buttons, panels, off-canvas — because this app's `sass` gem
+  (3.7.4) returns `null` for "not found," not the `false` that Foundation 5.2.1.0 (unmaintained
+  since ~2015) was written against. Symptom: the app boots fine and every asset request 200s,
+  but the UI renders completely unstyled/overlapping. If you ever suspect this regressed,
+  `curl` a `foundation_and_overrides*.css` asset and grep for `.row {` — it should be present.
+- **Turbolinks 2.5.4's `URI.escape` crash is fixed** by
+  `config/initializers/turbolinks_uri_escape_compat.rb`, which patches
+  `Turbolinks::XDomainBlocker#same_origin?` to use `URI::DEFAULT_PARSER.escape` instead —
+  Ruby 3.0 removed `URI.escape` entirely, and that method runs as an `after_action` on
+  *every* redirect reached via Turbolinks' own XHR-driven navigation (`X-XHR-Referer`
+  header present), so it used to 500 any "create/update and redirect" flow clicked through
+  the real UI. A raw `curl` test won't reproduce the original bug — repro it with
+  `curl -H "X-XHR-Referer: <url>"` against an action that redirects. Do not delete this
+  initializer.
+- `tmp/cache/assets` and `.sass-cache` can serve stale precompiled CSS/JS across unrelated
+  code changes — if a stylesheet/JS edit doesn't seem to take effect, `rm -rf
+  tmp/cache/assets .sass-cache` and restart the server before assuming the fix didn't work.
+- **`bd create`/`bd close` auto-route to the wrong repo by default in this checkout.**
+  Auto-routing sends writes to `repos.additional` (`~/.beads-planning`) instead of the
+  primary `.` repo, which surfaces as `database not initialized: issue_prefix config is
+  missing` even though the primary repo's own DB is fine (`bd context` confirms it). Pass
+  `bd create --repo .` explicitly; `bd show`/`bd close <id>` resolve correctly by ID prefix
+  without needing a flag (there isn't one on those subcommands).
+
 ### Tests (Minitest, not RSpec)
 
 Tests live in `test/` (`models/`, `controllers/`, `integration/`, `mailers/`, `helpers/`)
