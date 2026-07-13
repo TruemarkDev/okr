@@ -319,6 +319,11 @@ gem "omniauth-oauth2"#, '1.0.2'
 gem 'omniauth-fluxapp' , :git => 'https://github.com/stpnlr/omniauth-fluxapp.git', :ref => 'a00079af6e6ebb9dae5ca4c50ff4dfb01a20f159'
 gem 'tzinfo-data'
 
+# csv moves from a default gem to a bundled gem in Ruby 3.4; declare it
+# explicitly now to silence the "will no longer be part of the default
+# gems" warning railties emits on every boot under Ruby 3.3.11.
+gem 'csv'
+
 group :test do
   # simplecov 1.0.0 raises the Ruby floor to >= 3.2 -- this hop's Ruby 3.3
   # bump (roadmap Task 9) clears that floor for the first time, so it's no
