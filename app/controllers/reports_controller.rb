@@ -610,7 +610,7 @@ class ReportsController < ApplicationController
             "#{t.end_date.strftime('%b %d, %Y %H:%M')}",
             "#{t.status == 'active' ? 'Pending' : t.status.capitalize}",
             "#{t.completed_on.nil? ? '' : t.completed_on.strftime('%b %d, %Y %H:%M')}",
-            "#{logs[t.id].nil? ? '0:00' : logs[t.id].sum(&:minutes).to_duration }"
+            "#{logs[t.id].nil? ? '0:00' : logs[t.id].sum { |l| l.minutes.to_i }.to_duration }"
         ]
       end
       respond_to do |format|
