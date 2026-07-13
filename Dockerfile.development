@@ -79,6 +79,16 @@ ENV APP_HOME /share
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
+# This image's base (Ubuntu 18.04) ships glibc 2.27, but the precompiled
+# `x86_64-linux-gnu` platform gems of nokogiri >= 1.16 (and friends) are
+# built against glibc >= 2.28 -- loading them dies with
+# `GLIBC_2.28 not found`. Force every native gem to build from source
+# instead. Set as ENV (not `bundle config`) so it applies both to this
+# build-time `bundle install` AND to every later `docker run` against the
+# image (CI's per-step containers, docker-compose), independent of the
+# checkout's untracked/gitignored `.bundle/config`.
+ENV BUNDLE_FORCE_RUBY_PLATFORM true
+
 ADD Gemfile* $APP_HOME/
 RUN bundle install
 

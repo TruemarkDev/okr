@@ -29,20 +29,21 @@ name: CI
 # container's own writable layer -- not under `/share` (the only path bind-
 # mounted from the runner's checkout, which is the only thing that actually
 # persists across separate `docker run` invocations) -- and are discarded
-# the moment that container exits. The repo's `.bundle/config`
-# (`force_ruby_platform: true`) only gets copied into the image by
-# `Dockerfile.development`'s `ADD . $APP_HOME` AFTER its own build-time
-# `bundle install`, so that setting isn't in effect yet for the gems the
-# image bakes in -- meaning even the baked-in copy of `nokogiri`/`ffi`/
-# `mini_portile2` doesn't satisfy `bundle check` once `.bundle/config` (via
-# the bind mount) is active, and every later step's fresh container re-hits
-# `Bundler::GemNotFound` for exactly those three gems. Fixed by giving the
-# gem directory its own named Docker volume, shared across all three
-# `docker run` steps in this job (Docker seeds a brand-new named volume from
-# the image's own content on first mount, so the image's pre-baked gems
-# aren't lost -- only genuinely NEW installs, like the `force_ruby_platform`
-# re-resolve of those three gems, now persist forward instead of being
-# thrown away per step).
+# the moment that container exits. Fixed by giving the gem directory its
+# own named Docker volume, shared across all three `docker run` steps in
+# this job (Docker seeds a brand-new named volume from the image's own
+# content on first mount, so the image's pre-baked gems aren't lost, and
+# any NEW installs persist forward instead of being thrown away per step).
+#
+# Note on native gems: `.bundle/config` (`force_ruby_platform: true`) is
+# gitignored, so it exists only in local checkouts -- CI never sees it.
+# Relying on it here broke once nokogiri hit 1.16+ (its precompiled
+# x86_64-linux-gnu gem needs glibc >= 2.28; the image's Ubuntu 18.04 base
+# has 2.27): the image baked the precompiled gem, CI's checkout had no
+# bundle config to force a re-resolve, and boot died with `GLIBC_2.28 not
+# found`. `Dockerfile.development` now sets `ENV BUNDLE_FORCE_RUBY_PLATFORM
+# true` before its build-time `bundle install`, which covers both the baked
+# gems and every `docker run` step below.
 
 env:
   GEM_VOLUME: fluxday-ci-gems-${{ github.run_id }}
