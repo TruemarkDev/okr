@@ -25,10 +25,10 @@
 
 ## 4. Docker
 
-- [ ] 4.1 Swap `docker-compose.yml` `fluxday-db` service from `mysql:5.6` to current stable `postgres` (alpine), port 5432, PG data volume path, `pg_isready`-based healthcheck
-- [ ] 4.2 Convert `db.env.example` (and local `db.env`) from `MYSQL_*` to `POSTGRES_*` variables; update `app.env.example` DB vars if needed
-- [ ] 4.3 Replace `libmysqlclient-dev` with `libpq-dev` in `Dockerfile.development`
-- [ ] 4.4 `docker-compose up -d --build --remove-orphans`; verify the app container migrates, seeds, and serves the login page end-to-end
+- [x] 4.1 Swap `docker-compose.yml` `fluxday-db` service from `mysql:5.6` to current stable `postgres` (alpine), port 5432, PG data volume path, `pg_isready`-based healthcheck
+- [x] 4.2 Convert `db.env.example` (and local `db.env`) from `MYSQL_*` to `POSTGRES_*` variables; update `app.env.example` DB vars if needed
+- [x] 4.3 Replace `libmysqlclient-dev` with `libpq-dev` in `Dockerfile.development`
+- [x] 4.4 `docker-compose up -d --build --remove-orphans`; verify the app container migrates, seeds, and serves the login page end-to-end
 
 ## 5. CI
 

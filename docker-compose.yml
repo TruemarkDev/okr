@@ -7,7 +7,11 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - fluxday-db-data:/var/lib/postgresql/data
+      # postgres:18+'s official image stores data under a major-version-
+      # specific subdirectory of /var/lib/postgresql (not directly in
+      # /var/lib/postgresql/data as on 17 and earlier) -- mount the parent
+      # dir per https://github.com/docker-library/postgres/pull/1259.
+      - fluxday-db-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
