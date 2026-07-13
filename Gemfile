@@ -19,8 +19,8 @@ gem 'rails-html-sanitizer', '~> 1.7.0'
 # until that migration is deliberately scoped.
 gem 'omniauth', '~> 1.9'
 
-# Use mysql as the database for Active Record
-gem 'mysql2', '~> 0.5.7'
+# Use postgresql as the database for Active Record
+gem "pg", "~> 1.6"
 
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 5.0'

@@ -1,21 +1,23 @@
-# MySQL.  Versions 4.1 and 5.0 are recommended.
+# PostgreSQL. See https://guides.rubyonrails.org/configuring.html#configuring-a-postgresql-database
 #
-# Install the MYSQL driver
-#   gem install mysql2
+# Install the pg driver
+#   gem install pg
 #
-# Ensure the MySQL gem is defined in your Gemfile
-#   gem 'mysql2'
+# Ensure the pg gem is defined in your Gemfile
+#   gem 'pg'
 #
-# And be sure to use new-style password hashing:
-#   http://dev.mysql.com/doc/refman/5.0/en/old-client.html
+# Locally (non-Docker): brew install postgresql@17 && brew services start postgresql@17
+# gives you a passwordless superuser named after your macOS username -- set
+# DB_USER to that username (there is no default password to fall back on).
 default: &default
-  adapter: mysql2
-  encoding: utf8
+  adapter: postgresql
+  encoding: unicode
   pool: 5
   database: <%= ENV['DB_NAME'] %>
   username: <%= ENV['DB_USER'] %>
   password: <%= ENV['DB_PASS'] %>
   host: <%= ENV['DB_HOST'] %>
+  port: 5432
 
 development:
   <<: *default
