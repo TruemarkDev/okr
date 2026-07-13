@@ -32,7 +32,7 @@
 
 ## 5. CI
 
-- [ ] 5.1 Swap the `.github/workflows/ci.yml` MySQL service for a `postgres` service container (health-checked, port 5432, `POSTGRES_*` env); update `DB_*` env passed to the rake/test steps and rewrite the workflow's MySQL-era header comments
+- [x] 5.1 Swap the `.github/workflows/ci.yml` MySQL service for a `postgres` service container (health-checked, port 5432, `POSTGRES_*` env); update `DB_*` env passed to the rake/test steps and rewrite the workflow's MySQL-era header comments
 - [ ] 5.2 Push the branch and confirm a green CI run on Postgres
 
 ## 6. Data migration path
@@ -42,6 +42,6 @@
 
 ## 7. Documentation and cleanup
 
-- [ ] 7.1 Update CLAUDE.md and AGENTS.md (mirror both): stack line (MySQL → PostgreSQL), local dev env vars/commands, Docker notes; update README if it mentions MySQL
-- [ ] 7.2 Update `.claude/agents/rails-engineer.md` (stack description + the MySQL-strict-mode landmine note now applies as Postgres DISTINCT behavior) and the `local-non-docker-dev...` bd memory (`bd remember --key ...`)
-- [ ] 7.3 Remove `baseline-mysql.txt` scratch artifact from the change dir if committed; final `git status` review and handoff (no push without explicit authority)
+- [x] 7.1 Update CLAUDE.md and AGENTS.md (mirror both): stack line (MySQL → PostgreSQL), local dev env vars/commands, Docker notes; update README if it mentions MySQL — AGENTS.md carries no stack/MySQL content to mirror (it's bd/beads workflow boilerplate only), so no edit was needed there
+- [x] 7.2 Update `.claude/agents/rails-engineer.md` (stack description + the MySQL-strict-mode landmine note now applies as Postgres DISTINCT behavior) and the `local-non-docker-dev...` bd memory (`bd remember --key ...`)
+- [x] 7.3 Remove `baseline-mysql.txt` scratch artifact from the change dir if committed; final `git status` review and handoff (no push without explicit authority)
