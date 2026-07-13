@@ -235,6 +235,15 @@ class ReportsControllerTest < ActionController::TestCase
     assert_equal users(:admin).id, assigns(:user).id
   end
 
+  test "assignments handles a nil-minutes worklog on an in-range task" do
+    # work_logs(:one) has minutes == nil; scoping the date range to cover
+    # tasks(:one)'s 2014 dates pulls it into the per-task time-spent sum,
+    # which coerces via `l.minutes.to_i` so a nil contributes 0 instead of
+    # raising TypeError: nil can't be coerced into Integer.
+    get :assignments, params: { start_date: '2014-01-01', end_date: '2014-12-31' }
+    assert_response :success
+  end
+
   # ---- employee (non-manager) role branches ---------------------------------
 
   test "employees_daily as employee defaults to self report" do
