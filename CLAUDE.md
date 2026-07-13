@@ -4,19 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-fluxday is an OKR + task/productivity tracker (Foradian, open-sourced 2016). It's a
-**legacy Rails 4.1 monolith on Ruby 2.3.0 / MySQL**. This is a maintenance codebase,
-not greenfield — match the surrounding style and framework idioms of the file you're
-editing rather than introducing modern patterns.
+fluxday is an OKR + task/productivity tracker (Foradian, open-sourced 2016). It started life
+as a **legacy Rails 4.1 app on Ruby 2.3.0** and has since been carried, hop by hop, up to
+**Rails 8.0 / Ruby 3.3 / MySQL** (see the `roadmap Task 0`–`Task 12` commits in git log and the
+history comment at the top of `config/application.rb`). This is still a maintenance codebase,
+not greenfield — match the surrounding style of the file you're editing — but the framework
+itself is current, so use modern Rails 8 idioms (`before_action`, strong params, Zeitwerk) going
+forward rather than legacy Rails 4 ones.
 
-- Ruby is pinned to **2.3.0** via `.ruby-version` / `.tool-versions` (asdf). The README
-  says 2.1.0 but the working setup is 2.3.0 — trust the version files.
-- Rails **4.1** (`before_filter`, not `before_action`; `mysql2 0.3.21`).
+- Ruby is pinned to **3.3.11** via `.ruby-version` / `.tool-versions` (asdf/mise).
+- Rails **8.0** (`before_action`, not `before_filter`; strong params, not `attr_accessible`;
+  `mysql2 ~> 0.5.7`).
 - Server-rendered ERB views + Foundation 5 + jQuery + Turbolinks + CoffeeScript. No SPA.
 
 ## Commands
 
-Local dev assumes Ruby 2.3.0 is active (asdf) and MySQL is reachable.
+Local dev assumes Ruby 3.3.11 is active (asdf/mise) and MySQL is reachable.
 
 ```bash
 bundle install                 # install gems
@@ -75,7 +78,7 @@ User → Okr → Objective → KeyResult → (task_key_results) → Task → Wor
 
 ### Authorization
 
-- **Devise** for auth (`authenticate_user!` is a global `before_filter` in
+- **Devise** for auth (`authenticate_user!` is a global `before_action` in
   `ApplicationController`) plus **omniauth-google-oauth2** for Google login.
 - **CanCanCan** for authorization — all rules live in `app/models/ability.rb`, keyed off the
   three roles: `admin` / `manager` (both effectively `can :manage, :all`) and `employee`
@@ -112,9 +115,8 @@ User → Okr → Objective → KeyResult → (task_key_results) → Task → Wor
 
 Lean into vanilla Rails; this repo is deliberately *not* layered like a modern service-
 oriented backend. In particular, do **not** introduce service objects, `dry-monads`
-`Success`/`Failure`, Pundit, serializer/`presenter`/`contract`/`finder` layers, RSpec, or
-`before_action` (it's Rails 4.1 — `before_filter`). If a change seems to need one of those,
-raise it before building.
+`Success`/`Failure`, Pundit, serializer/`presenter`/`contract`/`finder` layers, or RSpec.
+If a change seems to need one of those, raise it before building.
 
 - **Fat models, skinny controllers.** Logic lives in ActiveRecord models (validations,
   associations, callbacks, scopes) and in `app/*/concerns`; controllers orchestrate.
@@ -127,8 +129,10 @@ raise it before building.
 
 ### General
 
-- Follow Rails 4.1 idioms in existing files (`before_filter`, `attr_accessible`-era patterns,
-  ERB views). Do not upgrade framework APIs as a side effect of a feature change.
+- The app runs Rails 8.0 / Ruby 3.3 — use current idioms (`before_action`, strong params,
+  Zeitwerk autoloading) rather than the Rails 4.1-era patterns from its early history. Don't
+  bump gem/Rails/Ruby versions further as a side effect of a feature change, though — that's
+  its own deliberate, isolated piece of work.
 - Respect soft-delete (`is_deleted`) and the role/visibility scoping instead of raw
   `where`/`destroy` — especially for anything an `employee` can reach.
 - When adding an authorization-gated action, add the rule to `app/models/ability.rb`.

@@ -97,9 +97,12 @@ gem 'mysql2', '~> 0.5.7'
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 5.0'
 
-# Use Uglifier as compressor for JavaScript assets
+# Use Terser as compressor for JavaScript assets (Uglifier's ES5-only parser
+# chokes on the ES6 class syntax that Rails 8's bundled ActiveStorage/
+# ActionText JS ships with, once `rails/all` puts them on the precompile
+# list -- see production.rb's js_compressor).
 gem 'execjs', '~> 2.7.0'
-gem 'uglifier', '< 4'
+gem 'terser', '~> 1.2'
 gem 'multipart-post', '< 2.0'
 
 # Was pinned `< 0.10` since the app's original (2016) Gemfile with no

@@ -344,6 +344,8 @@ GEM
       actionpack (>= 6.1)
       activesupport (>= 6.1)
       sprockets (>= 3.0.0)
+    terser (1.2.8)
+      execjs (>= 0.3.0, < 3)
     thin (2.0.1)
       daemons (~> 1.0, >= 1.0.9)
       eventmachine (~> 1.0, >= 1.0.4)
@@ -359,8 +361,6 @@ GEM
       concurrent-ruby (~> 1.0)
     tzinfo-data (1.2026.3)
       tzinfo (>= 1.0.0)
-    uglifier (3.2.0)
-      execjs (>= 0.3.0, < 3)
     uri (1.1.1)
     useragent (0.16.11)
     warden (1.2.9)
@@ -419,10 +419,10 @@ DEPENDENCIES
   sass-rails (~> 5.0)
   select2-rails (= 3.5.11)
   simplecov (~> 0.22.0)
+  terser (~> 1.2)
   thin
   turbolinks (~> 2.5.4)
   tzinfo-data
-  uglifier (< 4)
   wicked_pdf (~> 2.1.0)
   will_paginate
   wkhtmltopdf-binary

@@ -43,6 +43,13 @@ class User < ApplicationRecord
   #default_scope {where.not(is_deleted:true).order("name ASC")}
   #default_scope {order("name ASC")}
 
+  # Team's default_scope orders by teams.name, which MySQL rejects when
+  # combined with the SELECT DISTINCT that `-> { distinct }` on the :teams
+  # association applies to the id-only pluck the default ids_reader runs.
+  def team_ids
+    teams.reorder(nil).pluck(:id)
+  end
+
   def admin?
     role.downcase == 'admin'
   end

@@ -17,7 +17,7 @@ class Project < ApplicationRecord
   #after_save  :update_numbers
 
   def members
-    return project_members.active.distinct
+    return project_members.reorder(nil).active.distinct
   end
 
   def update_user_project_count(pm)
