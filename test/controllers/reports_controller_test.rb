@@ -527,81 +527,73 @@ class ReportsControllerTest < ActionController::TestCase
   end
 
   # ---- CSV / XLS export formats ----------------------------------------------
-  # 🔴 BUG PINNED (flagged to coordinator for a bd issue): every CSV/XLS export
-  # currently returns HTTP 500. The actions `render "reports/csv_report.csv.erb"`
-  # / `"reports/excel_report.xls.erb"` / `"reports/worklog_detailed.xls.erb"` —
-  # passing a filename with an embedded `.csv.erb` / `.xls.erb` to `render`. Under
-  # Rails 8's template lookup that no longer resolves to the (existing) file and
-  # raises `ActionView::MissingTemplate` (confirmed 500 through the full HTTP
-  # stack, not just the test harness). The templates DO exist in app/views/reports/
-  # — the render call form is the bug. The `@fields` builder + aggregation blocks
-  # run *before* the raise, so these tests still exercise that duration/grouping
-  # logic while pinning the current breakage.
-  # >> The fix (own scope) is to change these renders to `render template:
-  #    "reports/csv_report", formats: :csv` (etc.); when done, flip these
-  #    assert_raises to assert_response :success + content-type checks.
+  # Exercises the CSV/XLS export paths of each action. These used to 500
+  # (ActionView::MissingTemplate) because the actions called `render
+  # "reports/csv_report.csv.erb"` / `"reports/excel_report.xls.erb"` /
+  # `"reports/worklog_detailed.xls.erb"` — a filename with the format embedded,
+  # which doesn't resolve under Rails 8's template lookup. Fixed by rendering
+  # `render template: "reports/csv_report", formats: :csv` (etc.) instead.
 
-  def assert_export_500(action, params: {}, format: :csv)
-    assert_raises(ActionView::MissingTemplate) do
-      get action, params: params, format: format
-    end
+  def assert_export_success(action, params: {}, format: :csv)
+    get action, params: params, format: format
+    assert_response :success
   end
 
-  test "employees_daily csv/xls export currently 500s (MissingTemplate)" do
-    assert_export_500(:employees_daily, format: :csv)
-    assert_export_500(:employees_daily, format: :xls)
+  test "employees_daily csv/xls export succeeds" do
+    assert_export_success(:employees_daily, format: :csv)
+    assert_export_success(:employees_daily, format: :xls)
   end
 
-  test "employees_time_range csv export currently 500s (MissingTemplate)" do
-    assert_export_500(:employees_time_range, format: :csv)
+  test "employees_time_range csv export succeeds" do
+    assert_export_success(:employees_time_range, format: :csv)
   end
 
-  test "employee_day csv export currently 500s (MissingTemplate)" do
-    assert_export_500(:employee_day, params: { employee_id: users(:admin).id })
+  test "employee_day csv export succeeds" do
+    assert_export_success(:employee_day, params: { employee_id: users(:admin).id })
   end
 
-  test "employee_range csv export currently 500s (MissingTemplate)" do
-    assert_export_500(:employee_range, params: { employee_id: users(:admin).id,
+  test "employee_range csv export succeeds" do
+    assert_export_success(:employee_range, params: { employee_id: users(:admin).id,
                       start_date: '2014-01-01', end_date: '2014-12-31' })
   end
 
-  test "tasks csv export currently 500s (MissingTemplate)" do
+  test "tasks csv export succeeds" do
     users(:admin).update_column(:admin_projects_count, 1)
-    assert_export_500(:tasks, params: { report: { type: 'project', project_id: 1 },
+    assert_export_success(:tasks, params: { report: { type: 'project', project_id: 1 },
                       start_date: '2014-01-01', end_date: '2014-12-31' })
   end
 
-  test "employee_tasks csv export currently 500s (MissingTemplate)" do
-    assert_export_500(:employee_tasks, params: { task_id: 1, user_id: users(:admin).id,
+  test "employee_tasks csv export succeeds" do
+    assert_export_success(:employee_tasks, params: { task_id: 1, user_id: users(:admin).id,
                       start_date: '2014-01-01', end_date: '2014-12-31' })
   end
 
-  test "task csv export currently 500s (MissingTemplate)" do
+  test "task csv export succeeds" do
     users(:admin).update_column(:admin_projects_count, 1)
-    assert_export_500(:task, params: { id: 1 })
+    assert_export_success(:task, params: { id: 1 })
   end
 
-  test "okrs csv export currently 500s (MissingTemplate)" do
-    assert_export_500(:okrs)
+  test "okrs csv export succeeds" do
+    assert_export_success(:okrs)
   end
 
-  test "worklogs csv/xls export currently 500s (MissingTemplate)" do
-    assert_export_500(:worklogs, format: :csv)
-    assert_export_500(:worklogs, format: :xls)
+  test "worklogs csv/xls export succeeds" do
+    assert_export_success(:worklogs, format: :csv)
+    assert_export_success(:worklogs, format: :xls)
   end
 
-  test "worklogs detailed xls export currently 500s (MissingTemplate)" do
-    assert_export_500(:worklogs, params: { detailed: true }, format: :xls)
+  test "worklogs detailed xls export succeeds" do
+    assert_export_success(:worklogs, params: { detailed: true }, format: :xls)
   end
 
-  test "day_log csv export currently 500s (MissingTemplate)" do
-    assert_export_500(:day_log, params: { user_id: 'ADMIN001', date: '2014-01-01' })
+  test "day_log csv export succeeds" do
+    assert_export_success(:day_log, params: { user_id: 'ADMIN001', date: '2014-01-01' })
   end
 
-  test "assignments csv export currently 500s (MissingTemplate)" do
+  test "assignments csv export succeeds" do
     # Default (current-quarter) range excludes the 2014 fixture task, so @fields is
-    # empty and the crash is the MissingTemplate render (not the nil-minutes sum).
-    assert_export_500(:assignments)
+    # empty and the export still renders successfully.
+    assert_export_success(:assignments)
   end
 
   private

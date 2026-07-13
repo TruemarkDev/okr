@@ -66,11 +66,11 @@ class ReportsController < ApplicationController
       format.html
       format.csv do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-        render "reports/csv_report.csv.erb"
+        render template: "reports/csv_report", formats: :csv
       end
       format.xls do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-        render "reports/excel_report.xls.erb"
+        render template: "reports/excel_report", formats: :xls
       end
       format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
     end
@@ -137,11 +137,11 @@ class ReportsController < ApplicationController
       format.html
       format.csv do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-        render "reports/csv_report.csv.erb"
+        render template: "reports/csv_report", formats: :csv
       end
       format.xls do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-        render "reports/excel_report.xls.erb"
+        render template: "reports/excel_report", formats: :xls
       end
       format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
     end
@@ -171,11 +171,11 @@ class ReportsController < ApplicationController
       format.html
       format.csv do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-        render "reports/csv_report.csv.erb"
+        render template: "reports/csv_report", formats: :csv
       end
       format.xls do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-        render "reports/excel_report.xls.erb"
+        render template: "reports/excel_report", formats: :xls
       end
       format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
     end
@@ -215,11 +215,11 @@ class ReportsController < ApplicationController
       format.html
       format.csv do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-        render "reports/csv_report.csv.erb"
+        render template: "reports/csv_report", formats: :csv
       end
       format.xls do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-        render "reports/excel_report.xls.erb"
+        render template: "reports/excel_report", formats: :xls
       end
       format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
     end
@@ -293,11 +293,11 @@ class ReportsController < ApplicationController
         format.html
         format.csv do
           response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-          render "reports/csv_report.csv.erb"
+          render template: "reports/csv_report", formats: :csv
         end
         format.xls do
           response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-          render "reports/excel_report.xls.erb"
+          render template: "reports/excel_report", formats: :xls
         end
         format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
       end
@@ -325,11 +325,11 @@ class ReportsController < ApplicationController
       format.html
       format.csv do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-        render "reports/csv_report.csv.erb"
+        render template: "reports/csv_report", formats: :csv
       end
       format.xls do
         response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-        render "reports/excel_report.xls.erb"
+        render template: "reports/excel_report", formats: :xls
       end
       format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
     end
@@ -366,11 +366,11 @@ class ReportsController < ApplicationController
           format.html
           format.csv do
             response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-            render "reports/csv_report.csv.erb"
+            render template: "reports/csv_report", formats: :csv
           end
           format.xls do
             response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-            render "reports/excel_report.xls.erb"
+            render template: "reports/excel_report", formats: :xls
           end
           format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
         end
@@ -423,11 +423,11 @@ class ReportsController < ApplicationController
         format.html
         format.csv do
           response.headers['Content-Disposition'] = 'attachment; filename="okr_report.csv"'
-          render "reports/csv_report.csv.erb"
+          render template: "reports/csv_report", formats: :csv
         end
         format.xls do
           response.headers['Content-Disposition'] = 'attachment; filename="okr_report.xls"'
-          render "reports/excel_report.xls.erb"
+          render template: "reports/excel_report", formats: :xls
         end
         format.pdf { render :pdf => "Fluxday report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
       end
@@ -510,16 +510,16 @@ class ReportsController < ApplicationController
       format.html
       format.csv do
         response.headers['Content-Disposition'] = 'attachment; filename="worklog.csv"'
-        render "reports/csv_report.csv.erb"
+        render template: "reports/csv_report", formats: :csv
       end
       format.xls do
         if params[:detailed].present? && params[:detailed]
           p @hours.inspect
           response.headers['Content-Disposition'] = 'attachment; filename="worklog_detailed.xls"'
-          render "reports/worklog_detailed.xls.erb"
+          render template: "reports/worklog_detailed", formats: :xls
         else
           response.headers['Content-Disposition'] = 'attachment; filename="worklog.xls"'
-          render "reports/excel_report.xls.erb"
+          render template: "reports/excel_report", formats: :xls
         end
       end
       format.pdf { render :pdf => "Fluxday worklog report", :page_size => 'A4', :orientation => 'landscape', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
@@ -553,11 +553,11 @@ class ReportsController < ApplicationController
         format.html
         format.csv do
           response.headers['Content-Disposition'] = 'attachment; filename="worklog.csv"'
-          render "reports/csv_report.csv.erb"
+          render template: "reports/csv_report", formats: :csv
         end
         format.xls do
           response.headers['Content-Disposition'] = 'attachment; filename="worklog.xls"'
-          render "reports/excel_report.xls.erb"
+          render template: "reports/excel_report", formats: :xls
         end
         format.pdf { render :pdf => "Fluxday Daily report", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
       end
@@ -618,11 +618,11 @@ class ReportsController < ApplicationController
         format.html
         format.csv do
           response.headers['Content-Disposition'] = 'attachment; filename="assignments.csv"'
-          render "reports/csv_report.csv.erb"
+          render template: "reports/csv_report", formats: :csv
         end
         format.xls do
           response.headers['Content-Disposition'] = 'attachment; filename="assignments.xls"'
-          render "reports/excel_report.xls.erb"
+          render template: "reports/excel_report", formats: :xls
         end
         format.pdf { render :pdf => "Fluxday Assignments", :page_size => 'A4', :show_as_html => params[:debug].present?, :disable_javascript => false, :layout => 'pdf', :footer => {:center => '[page] of [topage]'} }
       end
