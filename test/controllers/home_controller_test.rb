@@ -63,4 +63,18 @@ class HomeControllerTest < ActionController::TestCase
     assert_response :success
     assert_not_nil assigns(:tasks)
   end
+
+  # Postgres LIKE is case-sensitive (unlike MySQL's default collation), so
+  # the ransack `*_cont` predicate on `tracker_id_or_name_or_description_cont`
+  # must be using ILIKE on the postgres adapter, or this mixed-case search
+  # would silently stop matching after the MySQL -> Postgres migration.
+  # tasks(:one) has name/description/tracker_id all == "MyString"; searching
+  # with a differently-cased substring ("MYSTR") can't hit the exact-match
+  # find_by_tracker_id branch (that's case-sensitive on both adapters), so a
+  # match here can only come from the case-insensitive ransack `cont` path.
+  test "search is case-insensitive on the ransack cont predicate (Postgres ILIKE parity)" do
+    get :search, params: { search: { keyword: 'MYSTR' } }
+    assert_response :success
+    assert_includes assigns(:tasks), tasks(:one)
+  end
 end

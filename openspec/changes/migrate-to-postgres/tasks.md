@@ -11,17 +11,17 @@
 
 ## 2. Adapter and configuration swap
 
-- [ ] 2.1 Replace `mysql2` with `pg` in the Gemfile via `bundle add pg` (latest stable); confirm the native extension builds
-- [ ] 2.2 Update `config/database.yml` and `config/database.yml.example`: `adapter: postgresql`, `encoding: unicode`, port 5432, rewritten header comments
-- [ ] 2.3 `rake db:create db:migrate` against local Postgres; commit the regenerated `db/schema.rb` (verify: no `charset:` options, diff shows only adapter-mechanical changes)
-- [ ] 2.4 `rake db:seed`; verify admin@fluxday.io sign-in works via `rails server` + curl of the login flow (include the `X-XHR-Referer` Turbolinks redirect check from CLAUDE.md)
+- [x] 2.1 Replace `mysql2` with `pg` in the Gemfile via `bundle add pg` (latest stable); confirm the native extension builds
+- [x] 2.2 Update `config/database.yml` and `config/database.yml.example`: `adapter: postgresql`, `encoding: unicode`, port 5432, rewritten header comments
+- [x] 2.3 `rake db:create db:migrate` against local Postgres; commit the regenerated `db/schema.rb` (verify: no `charset:` options, diff shows only adapter-mechanical changes)
+- [x] 2.4 `rake db:seed`; verify admin@fluxday.io sign-in works via `rails server` + curl of the login flow (include the `X-XHR-Referer` Turbolinks redirect check from CLAUDE.md)
 
 ## 3. Behavior parity verification
 
-- [ ] 3.1 Run the full `rake test` suite on Postgres; diff the failure set against `baseline-mysql.txt`; burn down any new failures to set-diff-empty
-- [ ] 3.2 Add a Minitest case locking case-insensitive Ransack `*_cont` task search (mixed-case query must match), and confirm it passes on Postgres
-- [ ] 3.3 Re-run the `/teams` and `/projects` controller tests explicitly (DISTINCT + ordered-`default_scope` landmine) and exercise both pages in a booted server
-- [ ] 3.4 Grep `\.group\(` call sites and run their covering tests (Postgres GROUP BY strictness)
+- [x] 3.1 Run the full `rake test` suite on Postgres; diff the failure set against `baseline-mysql.txt`; burn down any new failures to set-diff-empty
+- [x] 3.2 Add a Minitest case locking case-insensitive Ransack `*_cont` task search (mixed-case query must match), and confirm it passes on Postgres
+- [x] 3.3 Re-run the `/teams` and `/projects` controller tests explicitly (DISTINCT + ordered-`default_scope` landmine) and exercise both pages in a booted server
+- [x] 3.4 Grep `\.group\(` call sites and run their covering tests (Postgres GROUP BY strictness)
 
 ## 4. Docker
 

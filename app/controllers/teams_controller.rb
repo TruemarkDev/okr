@@ -111,7 +111,7 @@ class TeamsController < ApplicationController
     end_date = params[:end_date].to_date
     @kr_ids = Task.find(params[:task_id]).key_result_ids unless params[:task_id].blank?
     @kr_ids ||= []
-    @key_results = team.key_results.where('key_results.start_date <= ? && key_results.end_date >= ?', end_date, start_date).group_by(&:user_id)
+    @key_results = team.key_results.where('key_results.start_date <= ? AND key_results.end_date >= ?', end_date, start_date).group_by(&:user_id)
   end
 
   private
