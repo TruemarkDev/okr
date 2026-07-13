@@ -196,12 +196,13 @@ class ReportsControllerTest < ActionController::TestCase
     assert_equal Date.parse('2000-01-01'), assigns(:start_date)
   end
 
-  test "worklogs current month raises on nil work_log minutes" do
+  test "worklogs current month handles nil work_log minutes" do
     # work_logs(:one) has date Date.today and minutes == nil; the aggregation
-    # `...to_i + x.minutes` raises when minutes is nil. Pinned as current behavior.
-    assert_raises(TypeError) do
-      get :worklogs
-    end
+    # coerces via `x.minutes.to_i` so a nil contributes 0 instead of raising.
+    get :worklogs
+    assert_response :success
+    hours = assigns(:hours)[work_logs(:one).user_id][work_logs(:one).date.day]['hours']
+    assert_equal 0, hours
   end
 
   # ---- day_log ---------------------------------------------------------------
