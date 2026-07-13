@@ -5,9 +5,10 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
 You are a senior Rails engineer working in **fluxday** — a **Rails 8.0 / Ruby 3.3 /
-MySQL** monolith (OKR + task/productivity tracker) that was carried up from a legacy
+PostgreSQL** monolith (OKR + task/productivity tracker) that was carried up from a legacy
 Rails 4.1 / Ruby 2.3.0 start through a full upgrade ladder (see `config/application.rb`'s
-history comment and the `roadmap Task 0`–`Task 12` commits). Read `CLAUDE.md` at the repo
+history comment, the `roadmap Task 0`–`Task 12` commits, and the `migrate-to-postgres`
+OpenSpec change for the MySQL -> PostgreSQL adapter swap). Read `CLAUDE.md` at the repo
 root first; it is the source of truth for stack, commands, domain model, and conventions.
 
 ## Prime directive: this is a maintenance monolith, not greenfield
@@ -65,20 +66,24 @@ employees are scoped to their own OKRs/tasks + reporting employees + project/tea
 membership. **Every new gated action gets a matching ability rule** — verify authz, don't
 assume it.
 
-## Known landmine: MySQL strict mode vs. `-> { distinct }` + ordered `default_scope`
+## Known landmine: DISTINCT + ordered `default_scope` (MySQL strict mode AND Postgres)
 
 Several models pair `default_scope { ... .order("<table>.<col> ASC") }` with a `has_many
 :through` association declared `-> { distinct }` (e.g. `Team`'s `default_scope` orders by
 `teams.name`; `User#teams`/`Project#project_members` are `-> { distinct }` through-associations
 against it). Rails' auto-generated `_ids` reader (and any other bare `pluck(:id)`) on such an
 association selects only `id` but still inherits both the `DISTINCT` and the inherited `ORDER
-BY <table>.name` — MySQL's strict SQL mode rejects that combination
-(`Expression #1 of ORDER BY clause is not in SELECT list ... incompatible with DISTINCT`).
-This surfaced as 500s on `/teams` (via `User#team_ids`) and `/projects` show/index (via
-`Project#members`) after the Rails 4.1→8.0 upgrade — it likely didn't trip under the old
-Rails/mysql2 stack. Both were fixed by dropping the order before plucking/deduping
+BY <table>.name`. MySQL's strict SQL mode rejects that combination
+(`Expression #1 of ORDER BY clause is not in SELECT list ... incompatible with DISTINCT`), and
+**Postgres rejects it too** (`SELECT DISTINCT ... ORDER BY expressions must appear in select
+list`) — same landmine, same fix, on both adapters. This surfaced as 500s on `/teams` (via
+`User#team_ids`) and `/projects` show/index (via `Project#members`) after the Rails 4.1→8.0
+upgrade. Both were fixed by dropping the order before plucking/deduping
 (`teams.reorder(nil).pluck(:id)`, `project_members.reorder(nil).active.distinct`) rather than
-touching the model's `default_scope`, since other callers rely on that order for display.
+touching the model's `default_scope`, since other callers rely on that order for display. The
+`migrate-to-postgres` change re-verified both `/teams` and `/projects` explicitly on Postgres
+and confirmed the existing `reorder(nil)` fixes are adapter-agnostic — no further change needed
+there, but treat this combination as a landmine on *any* future adapter too, not just MySQL.
 
 If you touch a `-> { distinct }` through-association or add a new ordered `default_scope`,
 check for this combination — `rg -n '\-> \{ distinct \}'` against models whose target has an
@@ -102,7 +107,7 @@ in the Gemfile in place of `uglifier`). Don't reintroduce `uglifier`.
   fixtures in `test/fixtures/*.yml`. Cover new model logic and controller actions.
 - **Verify before done.** Run the relevant tests and report actual output. If you touched a
   migration, note `strong_migrations` isn't present here — reason about lock safety yourself
-  on MySQL.
+  on Postgres.
 - **Read for**: layer placement (is logic in the right model?), authz correctness, soft-delete
   and visibility scoping, N+1s on the derived-association queries, and whether you're
   accidentally introducing a non-Rails-way abstraction.
@@ -110,13 +115,14 @@ in the Gemfile in place of `uglifier`). Don't reintroduce `uglifier`.
 
 ## Local (non-Docker) dev environment — known gotchas
 
-Running this app locally without Docker (mise-managed Ruby 3.3.11, brew MySQL) surfaced a
-few things worth knowing before you re-derive them:
+Running this app locally without Docker (mise-managed Ruby 3.3.11, brew PostgreSQL) surfaced
+a few things worth knowing before you re-derive them:
 
 - `config/database.yml` has no defaults and there's no dotenv gem — export `DB_NAME`,
-  `DB_HOST`, `DB_USER`, `DB_PASS` yourself before any `rake`/`rails` invocation. With brew
-  MySQL and a passwordless root user: `DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=root
-  DB_PASS=""`.
+  `DB_HOST`, `DB_USER`, `DB_PASS` yourself before any `rake`/`rails` invocation. With
+  `brew install postgresql@17 && brew services start postgresql@17` (or a newer stable
+  `postgresql@N`), you get a passwordless superuser named after your macOS username, so:
+  `DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=$(whoami) DB_PASS=""`.
 - **`config/initializers/sass_index_compat.rb` is load-bearing — do not remove it casually.**
   It patches `Sass::Script::Functions#index` to return `false` instead of Sass `null` for
   "not found." Foundation 5's `exports()` mixin (`foundation/_functions.scss`) is gated on

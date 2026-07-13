@@ -19,7 +19,12 @@ name: CI
 # Boots the app the same way local dev does: Dockerfile.development (Ruby
 # 3.3.11, built from source since brightbox's `ruby-ng` PPA does not carry
 # any Ruby 3.x package for any Ubuntu series -- see that Dockerfile's own
-# comment) against a MySQL 5.6 service, matching docker-compose.yml.
+# comment) against a Postgres service, matching docker-compose.yml.
+#
+# migrate-to-postgres: swapped the MySQL 5.6 service container for Postgres
+# (postgres:18-alpine, matching the local/dev Postgres major version and
+# docker-compose.yml's fluxday-db image) -- port 5432, POSTGRES_* env,
+# pg_isready health check instead of mysqladmin ping.
 #
 # Task 12's dockerized dry-run verification (`docker build` + each step's
 # real `docker run` command, not just eyeballing this YAML) surfaced a
@@ -59,15 +64,16 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: mysql:5.6
+      postgres:
+        image: postgres:18-alpine
         env:
-          MYSQL_ROOT_PASSWORD: fluxday
-          MYSQL_DATABASE: fluxday
+          POSTGRES_USER: fluxday
+          POSTGRES_PASSWORD: fluxday
+          POSTGRES_DB: fluxday
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping --silent"
+          --health-cmd="pg_isready -U fluxday -d fluxday"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -90,7 +96,7 @@ jobs:
           docker run --rm --network host \
             -v "${{ github.workspace }}:/share" -w /share \
             -v "${{ env.GEM_VOLUME }}:/usr/local/lib/ruby/gems/3.3.0" \
-            -e DB_HOST=127.0.0.1 -e DB_USER=root -e DB_PASS=fluxday -e DB_NAME=fluxday \
+            -e DB_HOST=127.0.0.1 -e DB_USER=fluxday -e DB_PASS=fluxday -e DB_NAME=fluxday \
             fluxday-ci bash -lc "RAILS_ENV=test bundle exec rake db:create db:test:prepare"
 
       - name: Run test suite
@@ -98,7 +104,7 @@ jobs:
           docker run --rm --network host \
             -v "${{ github.workspace }}:/share" -w /share \
             -v "${{ env.GEM_VOLUME }}:/usr/local/lib/ruby/gems/3.3.0" \
-            -e DB_HOST=127.0.0.1 -e DB_USER=root -e DB_PASS=fluxday -e DB_NAME=fluxday \
+            -e DB_HOST=127.0.0.1 -e DB_USER=fluxday -e DB_PASS=fluxday -e DB_NAME=fluxday \
             fluxday-ci bash -lc "bundle exec rake test"
 
       - name: Clean up gem volume

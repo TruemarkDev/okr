@@ -49,7 +49,6 @@ RUN apt-get install -y nodejs \
     autoconf \
     bison \
     git python-virtualenv \
-    libmysqlclient-dev \
     libmagickwand-dev \
     gnuplot \
     imagemagick-doc \

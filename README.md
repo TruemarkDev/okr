@@ -36,8 +36,8 @@ Please note that the demo will automatically reset every 2 hours.
 ## Installation
 
 ### Dependencies
-- Ruby 2.1.0
-- MySQL or MariaDB server
+- Ruby 3.3.11 (see `.ruby-version`)
+- PostgreSQL server
 - Imagemagick
 - wkhtmltopdf (To be downloaded from [this website](http://wkhtmltopdf.org/) and placed in lib folder)
 

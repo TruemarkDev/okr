@@ -6,20 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 fluxday is an OKR + task/productivity tracker (Foradian, open-sourced 2016). It started life
 as a **legacy Rails 4.1 app on Ruby 2.3.0** and has since been carried, hop by hop, up to
-**Rails 8.0 / Ruby 3.3 / MySQL** (see the `roadmap Task 0`–`Task 12` commits in git log and the
-history comment at the top of `config/application.rb`). This is still a maintenance codebase,
-not greenfield — match the surrounding style of the file you're editing — but the framework
-itself is current, so use modern Rails 8 idioms (`before_action`, strong params, Zeitwerk) going
-forward rather than legacy Rails 4 ones.
+**Rails 8.0 / Ruby 3.3 / PostgreSQL** (see the `roadmap Task 0`–`Task 12` commits in git log,
+the history comment at the top of `config/application.rb`, and the `migrate-to-postgres`
+OpenSpec change for the MySQL -> PostgreSQL adapter swap). This is still a maintenance
+codebase, not greenfield — match the surrounding style of the file you're editing — but the
+framework itself is current, so use modern Rails 8 idioms (`before_action`, strong params,
+Zeitwerk) going forward rather than legacy Rails 4 ones.
 
 - Ruby is pinned to **3.3.11** via `.ruby-version` / `.tool-versions` (asdf/mise).
 - Rails **8.0** (`before_action`, not `before_filter`; strong params, not `attr_accessible`;
-  `mysql2 ~> 0.5.7`).
+  `pg` gem for PostgreSQL).
 - Server-rendered ERB views + Foundation 5 + jQuery + Turbolinks + CoffeeScript. No SPA.
 
 ## Commands
 
-Local dev assumes Ruby 3.3.11 is active (asdf/mise) and MySQL is reachable.
+Local dev assumes Ruby 3.3.11 is active (asdf/mise) and PostgreSQL is reachable.
 
 ```bash
 bundle install                 # install gems
@@ -31,10 +32,12 @@ rails server                   # http://localhost:3000
 
 `config/database.yml` has no defaults and this app has no dotenv gem — export `DB_NAME`/
 `DB_HOST`/`DB_USER`/`DB_PASS` yourself before any `rake`/`rails` command when running without
-Docker. Locally with `brew services start mysql` and a passwordless root user, this is:
+Docker. Locally with `brew install postgresql@17 && brew services start postgresql@17`
+(or a newer stable `postgresql@N`), you get a passwordless superuser named after your macOS
+username, so `DB_USER` is `$(whoami)`, not `root`:
 
 ```bash
-export DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=root DB_PASS=""
+export DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=$(whoami) DB_PASS=""
 ```
 
 ### Known runtime gotchas (non-Docker local dev)
@@ -80,8 +83,10 @@ rake test TEST=test/models/task_test.rb TESTOPTS="--name=/pattern/"   # single t
 
 ### Docker
 
-Docker Compose is the supported alternative for local dev (MySQL 5.6). Requires
-`app.env` and `db.env` (copy from the `.example` files first).
+Docker Compose is the supported alternative for local dev (`postgres:18-alpine`, or the
+current stable `postgres:N-alpine` at time of setup). Requires `app.env` and `db.env`
+(copy from the `.example` files first; `db.env` needs `POSTGRES_DB`/`POSTGRES_USER`/
+`POSTGRES_PASSWORD`).
 
 ```bash
 docker-compose up -d --build --remove-orphans

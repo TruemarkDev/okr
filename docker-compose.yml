@@ -1,10 +1,18 @@
 services:
   fluxday-db:
     container_name: fluxday-db
-    platform: linux/amd64    
-    image: mysql:5.6
+    image: postgres:18-alpine
     env_file:
       - db.env
+    ports:
+      - 5432:5432
+    volumes:
+      - fluxday-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   fluxday-app:
     container_name: fluxday-app
@@ -18,8 +26,12 @@ services:
     env_file:
       - app.env
     depends_on:
-      - fluxday-db
+      fluxday-db:
+        condition: service_healthy
     links:
       - fluxday-db
     ports:
       - 3000:3000
+
+volumes:
+  fluxday-db-data:
