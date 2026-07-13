@@ -5,9 +5,11 @@ the 2026-07-07 STATIC pass (which reported `PENDING(env)` / ~0% asserting-surfac
 the app was unbootable and the suite was scaffold-only). Since then Roadmap Task 0 (boot) landed,
 a Devise sign-in harness + real fixtures were built, and the suite was fleshed out with real
 assertions — so this pass replaces the proxy with true per-file line %.
-**Date:** 2026-07-13 · **Depth:** Phase A (read-only) · deep version of Roadmap §6 gate.
+**Date:** 2026-07-13 · **Depth:** Phase A (read-only) audit + **Phase B auth-surface backfill
+executed** (see §7) · deep version of Roadmap §6 gate.
 **Measurement:** `rake test` with `DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=root DB_PASS=""`,
-SimpleCov `command_name "Minitest"`. Overall **70.86% (1116/1575 lines)**.
+SimpleCov `command_name "Minitest"`. Overall **70.86% → 78.95%** after Phase B (§1–§6 below
+describe the pre-Phase-B state; §7 records the backfill).
 
 ---
 
@@ -154,18 +156,63 @@ now done and the suite is at 70.86% real coverage. Recommend:
   than of the first Rails bump — the floor no longer blocks the bump, but the untested auth
   surface blocks the auth-gem work specifically.
 
-## 7. Phase B (NOT run this pass)
+## 7. Phase B — auth-surface backfill (EXECUTED 2026-07-13)
 
-Writing the tests is Phase B — **requires explicit user go-ahead** and uses the `tdd` skill.
-Characterization tests must **pin current behavior** (bugs included — e.g. whatever
-`credentials_controller` actually returns today) — do not "fix" role logic, the OAuth callbacks,
-or the reports duration math while backfilling. Re-measure after each batch. Given the stakes,
-confirm the `users_controller`, `ability.rb`, and Doorkeeper-API tests with a **`mutant --use
-minitest`** run once green — `ability.rb` reads 100% covered but coverage is not catch-rate, and
-a permission file is exactly where a surviving mutant matters most.
+Scoped by the coordinator to **unblock the Doorkeeper 1.1→5.x migration (Task 10)** — auth/OAuth/API
+surface only, characterization (pin current behavior, bugs included), Minitest, no changes to
+`reports_controller` or other non-auth files. Full suite after: **363 runs, 0 failures, 0 errors,
+16 skips.** Overall coverage **70.86% → 78.95% (1116/1575 → 1204/1525)**.
+
+**New test files:**
+- `test/controllers/api/v1/credentials_controller_test.rb` — 4 tests
+- `test/controllers/users/omniauth_callbacks_controller_test.rb` — 4 tests
+- `test/lib/omniauth/strategies/fluxapp_test.rb` — 3 tests
+- `test/controllers/users_controller_test.rb` — 8 tests
+
+**Per-file coverage (Minitest command, 0% → after):**
+
+| File | Before | After |
+|---|---:|---:|
+| `api/v1/credentials_controller.rb` | 0% | **100%** (10/10) |
+| `api/v1/api_controller.rb` | 0% | **100%** (4/4) |
+| `users/omniauth_callbacks_controller.rb` | 0% | **100%** (14/14) |
+| `lib/omniauth/strategies/fluxapp.rb` | 0% | **90%** (9/10) |
+| `users_controller.rb` | 0% | **81%** (47/58) |
+
+### 🔴 Critical finding — `GET /api/v1/me` returns HTTP 500 in *every* path today
+
+Building the Doorkeeper regression net surfaced that the API auth endpoint is **entirely
+non-functional** on this Rails 8 checkout — two independent, environment-**in**dependent bugs the
+migration must fix (the tests pin the current broken behavior and will force a conscious flip):
+
+1. **Reject path (missing/invalid token):** doorkeeper-5.1.2's `doorkeeper_render_error` raises
+   `ArgumentError (given 2, expected 0..1)` under Rails 8 **before any response is produced** — so
+   an unauthenticated request 500s instead of returning 401. This is squarely inside the
+   1.1→5.x blast radius; the migration target must restore a clean 401.
+2. **Success path (valid token, owner linked):** the token authorizes and `current_resource_owner`
+   resolves the user correctly, but serializing that user to JSON calls
+   `ImageUploader#default_url → asset_path("fallback/user.png")`, and **only *versioned* fallbacks
+   exist** (`icon_user.png`, `thumbnail_user.png`, …) — no bare `user.png` — so it raises
+   `Sprockets::Rails::Helper::AssetNotFound`. Any user without an uploaded avatar 500s the endpoint.
+
+The only non-500 path is a valid token whose owner is *not* linked to the application (renders
+`{ error: "Invalid grant." }`). Both bugs are pinned as characterization tests with comments
+directing the migration to flip them to 401 / 200. **Recommend filing these as beads/Task-10
+acceptance criteria** (`bd create` is currently broken in this checkout — see CLAUDE.md — so flag
+to the user rather than filing).
+
+### Notes & follow-ups
+- The stale `Unit Tests` command_name still lingers in `coverage/.resultset.json` beside the live
+  `Minitest` one (SimpleCov reports "Minitest, Unit Tests") — harmless but worth clearing.
+- **Out of scope this pass (per coordinator):** `reports_controller.rb` (still 63%, the largest
+  remaining gap + date/duration math) and the general lift toward 80% beyond the auth surface.
+- **Not yet run:** `mutant --use minitest` on `credentials_controller` / `api_controller` /
+  `ability.rb` — recommended before the Doorkeeper bump to confirm the new net actually catches a
+  behavior change (a 100%-covered auth path is not the same as a mutation-resistant one).
 
 ---
 
-*Phase A read-only. SimpleCov was already installed and configured (no test-helper changes made
-this pass); the tree is clean apart from this deliverable. Real per-file line coverage is now the
-source of truth — re-run this gate after each Phase B batch and after any auth-gem migration.*
+*Phase A was read-only. Phase B added four test files under `test/` and did not modify any
+`app/`, `lib/`, or config code — the characterization tests pin current behavior (500s included)
+without fixing it. Re-run this gate after the Doorkeeper migration to replace the pinned-bug
+expectations with 401/200.*
