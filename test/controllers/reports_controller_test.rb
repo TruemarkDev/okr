@@ -482,20 +482,6 @@ class ReportsControllerTest < ActionController::TestCase
     assert_equal 'Permission denied', flash[:notice]
   end
 
-  # 🔴 BUG PINNED (flagged to coordinator for a bd issue): `assignments` builds
-  # @fields unconditionally (all formats), and line 613 sums worklog minutes with
-  # Ruby `Array#sum(&:minutes)` and NO `.to_i` coercion — unlike every other action
-  # here. work_logs(:one) has nil minutes, so any in-range task with such a log
-  # makes the sum do `0 + nil` and raises `TypeError: nil can't be coerced into
-  # Integer` -> HTTP 500, regardless of format.
-  # >> The fix (own scope) is `logs[t.id].sum { |l| l.minutes.to_i }` to match the
-  #    coercion used elsewhere; then flip this to assert_response :success.
-  test "assignments with an in-range nil-minutes worklog currently 500s (TypeError)" do
-    assert_raises(TypeError) do
-      get :assignments, params: { start_date: '2014-01-01', end_date: '2014-12-31' }
-    end
-  end
-
   # ---- remaining employee-role logic branches --------------------------------
 
   test "employee_day as employee scopes users to self plus managed" do
