@@ -6,8 +6,8 @@
 
 ## 1. Baseline (on MySQL, before touching anything)
 
-- [ ] 1.1 Run the full `rake test` suite on MySQL and record the exact failure set (test names, not just count) to `openspec/changes/migrate-to-postgres/baseline-mysql.txt`
-- [ ] 1.2 Install and start local PostgreSQL (`brew install postgresql@17 && brew services start postgresql@17`); confirm `psql` connects
+- [x] 1.1 Run the full `rake test` suite on MySQL and record the exact failure set (test names, not just count) to `openspec/changes/migrate-to-postgres/baseline-mysql.txt`
+- [x] 1.2 Install and start local PostgreSQL (`brew install postgresql@17 && brew services start postgresql@17`); confirm `psql` connects
 
 ## 2. Adapter and configuration swap
 
