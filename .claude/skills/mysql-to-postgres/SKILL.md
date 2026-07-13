@@ -19,7 +19,7 @@ re-grepping first.
 | Gem | `Gemfile` (`mysql2 ~> 0.5.7`) | Replace with `pg` — install latest stable via `bundle add pg` (never hand-pin an old version) |
 | DB config | `config/database.yml`, `config/database.yml.example` | `adapter: postgresql`, `encoding: unicode`, port 5432; rewrite the stale MySQL header comments |
 | Schema | `db/schema.rb` | Strip `charset: "utf8mb3"` from all 20 `create_table` calls; regenerate via `rake db:migrate` against Postgres and diff — never hand-edit beyond what a clean regeneration produces. `limit: 50` on `friendly_id_slugs.sluggable_type` is valid in PG; leave it |
-| Docker | `docker-compose.yml` (`mysql:5.6`), `db.env(.example)` | `postgres:17-alpine` (or latest stable), `POSTGRES_*` env vars, port 5432, named volume path `/var/lib/postgresql/data` |
+| Docker | `docker-compose.yml` (`mysql:5.6`), `db.env(.example)` | `postgres:17-alpine` (or latest stable), `POSTGRES_*` env vars, port 5432, named volume path `/var/lib/postgresql/data` — **on `postgres:18-alpine`+ the image switched its internal data-dir layout (`PGDATA` needs an explicit subdirectory, e.g. `/var/lib/postgresql/data/pgdata`, mounting the volume straight at `/var/lib/postgresql/data` fails to init); check the image's own docs for the version actually pulled, don't assume the 17-era layout** |
 | Dockerfile | `Dockerfile.development` (`libmysqlclient-dev`) | Replace with `libpq-dev` |
 | CI | `.github/workflows/ci.yml` (mysql:5.6 service) | `postgres` service image with `POSTGRES_PASSWORD`, health-check via `pg_isready`, port 5432; update the header comments |
 | Local dev docs | `CLAUDE.md`, `AGENTS.md` (mirror both!), README if it mentions MySQL | brew `postgresql@17`, `DB_USER=$(whoami)` / no password default; also update the `local-non-docker-dev...` bd memory |
@@ -49,6 +49,17 @@ re-grepping first.
 5. **GROUP BY strictness.** Postgres requires every non-aggregated select
    column in GROUP BY. Survey found no raw SQL, but `.group(...)` AR calls
    should be smoke-checked — grep `\.group\(` and run the covering tests.
+6. **`&&` as logical AND in raw `where()` string fragments.** The initial
+   design.md survey said "no raw SQL" and that held for `find_by_sql`/
+   `connection.execute`/backtick identifiers — but it missed `where('... &&
+   ...')` string fragments in several controllers (`home`, `calendar`,
+   `work_logs`, `tasks`, `teams`, `reports`), which use MySQL's `&&` as a
+   logical-AND alias for `AND`. MySQL accepts it; Postgres parses `&&` as the
+   *array-overlap* operator and throws, which 500'd `HomeController#index` —
+   the post-login dashboard — immediately on Postgres. Grep
+   `where\(['"].*&&` across `app/controllers` and replace with `AND`
+   (semantically identical on both adapters, so safe to land pre-emptively
+   rather than wait for it to surface as a failing request).
 
 ## Data migration (existing environments)
 

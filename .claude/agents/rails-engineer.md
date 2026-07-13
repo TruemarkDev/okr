@@ -89,6 +89,18 @@ If you touch a `-> { distinct }` through-association or add a new ordered `defau
 check for this combination — `rg -n '\-> \{ distinct \}'` against models whose target has an
 ordered `default_scope` is the fast way to spot candidates.
 
+## Known landmine: `&&` as logical AND in raw `where()` string fragments
+
+Several controllers (`home`, `calendar`, `work_logs`, `tasks`, `teams`, `reports`) had raw
+SQL fragments like `where('start_date <= ? && end_date >= ?', ...)` using MySQL's `&&` as an
+alias for `AND`. MySQL accepts it silently; Postgres parses `&&` as the *array-overlap*
+operator and raises — this 500'd `HomeController#index` (the post-login dashboard)
+immediately after the `migrate-to-postgres` adapter swap, despite the original MySQL-surface
+survey finding "no raw SQL" (it was looking for `find_by_sql`/`connection.execute`/backticks,
+not string-fragment operators). Fixed by replacing `&&` → `AND` (semantically identical on
+both adapters). If you add or touch a raw `where('...')` string fragment, grep for `&&`/`||`
+MySQL-alias operators before assuming it's adapter-neutral.
+
 ## Known gotcha: asset precompile + Uglifier
 
 `config/application.rb` uses `require 'rails/all'`, which auto-registers
