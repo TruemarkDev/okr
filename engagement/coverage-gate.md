@@ -1,141 +1,171 @@
 # Coverage Gate — fluxday
 
-**Mode:** STATIC (app does not boot on this machine — Ruby 2.3 missing, `bundle` unresolvable).
-Real line coverage is **`PENDING(env)`**. All percentages below are a **tested-surface proxy**,
-not line coverage. Read the honesty note before quoting any number.
-**Date:** 2026-07-07 · **Depth:** Phase A (read-only) · deep version of Roadmap §6 gate.
+**Mode:** RUNTIME (app boots; real SimpleCov line coverage measured in-suite). This supersedes
+the 2026-07-07 STATIC pass (which reported `PENDING(env)` / ~0% asserting-surface proxy while
+the app was unbootable and the suite was scaffold-only). Since then Roadmap Task 0 (boot) landed,
+a Devise sign-in harness + real fixtures were built, and the suite was fleshed out with real
+assertions — so this pass replaces the proxy with true per-file line %.
+**Date:** 2026-07-13 · **Depth:** Phase A (read-only) · deep version of Roadmap §6 gate.
+**Measurement:** `rake test` with `DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=root DB_PASS=""`,
+SimpleCov `command_name "Minitest"`. Overall **70.86% (1116/1575 lines)**.
 
 ---
 
-## Gate verdict: 🔴 RED
+## Gate verdict: 🟢 GREEN on the 60% floor · 🟠 PARTIAL on hotspots
 
-The gate (**≥60% line coverage overall + near-100% on auth/permission/money hotspots**) is
-**not met, and not remotely close.** Real line coverage is `PENDING(env)`, but the static
-proxy — measured *honestly* (asserting tests only) — is **effectively 0%**. There is **no
-behavioral safety net** anywhere in this codebase today. Do not touch a single line of
-product code (let alone start a version bump) until this is backfilled.
+- **≥60% overall line coverage:** **MET** — 70.86%. The upgrade may proceed past the gate's
+  hard floor. This is the real number, not a proxy.
+- **Near-100% on risk hotspots:** **PARTIAL.** RBAC is fully pinned (`ability.rb` **100%**,
+  `application_controller` 100%), but the **auth *entry points* and user/role/password
+  management are at 0%** — no test exists for the OAuth login callbacks, the Doorkeeper-gated
+  API, the fluxapp OmniAuth strategy, or `users_controller` (role assignment + `change_password`).
+  Per the skill's rule — *"a 55% overall with hotspots fully pinned beats 70% spread thin"* — the
+  headline 70.86% overstates safety on exactly the surfaces an upgrade is most likely to break.
+
+**Bottom line:** the floor is cleared, so this no longer blocks the first version bump the way
+the STATIC pass did. But **before touching auth/OAuth/Doorkeeper code** (e.g. Roadmap Task 10,
+doorkeeper 1.1→5.x), the 0% auth surface must be pinned — those migrations are precisely where
+an untested `current_resource_owner` / `doorkeeper_authorize!` path silently changes behavior.
 
 ---
 
 ## 1. Suite & framework currency
 
-- **Framework:** Minitest via `rails/test_help` + `fixtures :all` (Rails 4.1 default). No RSpec.
-- **SimpleCov:** **absent** (not in Gemfile). Nothing measures coverage today.
-- **Test files:** 41 total — 17 model, 12 helper, 12 controller. `test/integration/` and
-  `test/mailers/` contain only `.keep` (empty).
-- **Currency flag (amber):** Minitest itself is current and runs on modern Ruby, so this is
-  **not** an rspec-2 style "the suite is its own migration" blocker. **However** the scaffold
-  controller tests use the **pre-Rails-5 positional functional-test syntax**
-  (`get :index`, `post :create, project: {...}`) which **breaks in Rails 5+** (requires
-  `get :index, params: {...}`). Any test written now must anticipate that rewrite — it is
-  already implied by Roadmap Task 4 (4.2→5.0). Write new tests in a form that survives it.
+- **Framework:** Minitest via `rails/test_help` + `fixtures :all`. **Current** — runs green on
+  Ruby 3.3 / Rails 8. No rspec-2 "the suite is its own migration" blocker. No RSpec, no Cucumber
+  — **single live suite**, so no dual-suite/orphaned-suite split to price.
+- **Harness present:** `Devise::Test::ControllerHelpers#sign_in` is wired in `test_helper.rb`
+  with a documented ordering workaround; fixtures are real (`users(:admin)`, `manager`), not the
+  old `MyString` placeholders. **The one-time prereq cost from the STATIC pass (sign-in harness +
+  fixture rebuild) is already paid** — that is why the old 5/12 estimate collapses below.
+- **Test files:** 43 `*_test.rb` (19 model, 12 controller, 12 helper) + 1 integration
+  (`anonymous_pages_test.rb`). Missing controller tests: `users`, `api/v1/*`,
+  `users/omniauth_callbacks`.
+- **SimpleCov:** present (0.22.0) and running.
+- **Resultset caveat:** `coverage/.resultset.json` carries **two `command_name`s** — the live
+  **`Minitest`** run (70.86%) and a **stale `Unit Tests`** entry (30.3%) left over from a
+  partial/earlier run and kept alive by SimpleCov's merge. It is **not** a second suite; the gate
+  number is the `Minitest` one. Ignore the 30.3% figure (or clear the resultset to avoid
+  confusion).
 
-## 2. Surface map & the proxy (READ THE HONESTY NOTE)
+## 2. Per-file coverage (RUNTIME — real line %)
 
-**Source units** (`app/models` + `app/controllers` + `app/helpers` + `app/mailers` + `lib`):
+**Layer rollup:** models **97.2%** (282/290) · controllers 66.1% (733/1109) · helpers 76.5% ·
+uploaders 89.5% · lib 38.0% · **API controllers 0.0%** (0/22).
 
-| Layer | Units | Test files present | **File-match** (naive) | **Asserting** (honest) |
-|---|---:|---:|---:|---:|
-| Models | 18 | 17 (all but `ability.rb`) | 94% | **0%** — all 17 are empty `# test "the truth"` stubs |
-| Controllers | 17 | 12 | 71% | ~0% — see below |
-| Helpers | 13 | 12 (all but `application_helper`) | 92% | **0%** — all 12 are 4-line empty stubs |
-| Mailers | 0 | — | — | — |
-| Lib | 2 | 0 | 0% | **0%** |
-| **Total** | **50** | **41** | **82%** | **≈ 0%** |
+**Fully pinned (100%):** `ability.rb`, `application_controller`, `projects_controller`,
+`calendar_controller`, `task.rb`, `team.rb`, `project.rb`, `okr/objective/key_result`,
+`work_log`, `comment`, all join models, all 12 view-helpers.
 
-> **HONESTY NOTE — the 82% is theater, do not quote it.** The naive file-match proxy reads
-> 82% only because Rails' scaffold generator dropped a stub file next to almost every unit.
-> Grep for real (uncommented) assertions in the model and helper tests returns **zero**. The
-> only files containing any `assert` are 9 controller tests carrying the standard scaffold
-> CRUD block (`should get index`, `should create`, …) plus 3 with a 2-line smoke test. And
-> even those **cannot pass**:
-> - `ApplicationController` has a global `before_filter :authenticate_user!` with **no sign-in
->   helper** in `test_helper.rb` or any setup → every `assert_response :success` redirects to
->   login → **RED**.
-> - Fixtures are generator placeholders (`projects.yml` = `name: MyString`, `code: MyString`)
->   and the tests reference `projects(:one)` etc. against junk data — model validations and
->   custom controller actions will not behave.
->
-> **The trustworthy tested-surface proxy is ~0%.** Report `PENDING(env)` for line coverage
-> and **0% asserting-surface** as the proxy. The 82% file-match number exists only to be
-> explicitly discounted.
+**Uncovered surface — every file with missing lines (459 total missing):**
 
-## 3. Risk-ranked backfill (highest blast radius first)
+| Coverage | Miss | File | Risk |
+|---:|---:|---|---|
+| **0.0%** | 81 | `controllers/users_controller.rb` | 🔴 roles + `change_password` + `manager_ids` |
+| 63.0% | 170 | `controllers/reports_controller.rb` | 🟠 date-range + worklog duration/hour math; highest churn (46) |
+| **0.0%** | 22 | `lib/omniauth/strategies/fluxapp.rb` | 🔴 OAuth strategy |
+| **0.0%** | 21 | `controllers/users/omniauth_callbacks_controller.rb` | 🔴 Google/fluxapp login callback |
+| **0.0%** | 15 | `controllers/api/v1/credentials_controller.rb` | 🔴 `doorkeeper_authorize!` (see note) |
+| **0.0%** | 7 | `controllers/api/v1/api_controller.rb` | 🔴 `current_resource_owner` token→user |
+| 34.1% | 29 | `controllers/objectives_controller.rb` | 🟡 core OKR CRUD |
+| 36.4% | 21 | `controllers/key_results_controller.rb` | 🟡 core OKR CRUD |
+| 72.6% | 20 | `helpers/application_helper.rb` | 🟢 view helpers |
+| 80.2% | 16 | `controllers/work_logs_controller.rb` | 🟡 |
+| 80.6% | 14 | `controllers/teams_controller.rb` | 🟡 |
+| 71.4% | 10 | `controllers/comments_controller.rb` | 🟢 |
+| 67.9% | 9 | `lib/time_to_diff.rb` | 🟠 duration/`to_duration` math |
+| 89.7% | 8 | `models/user.rb` | 🟠 auth/role predicates |
+| 92.4% | 6 | `controllers/tasks_controller.rb` | 🟢 |
+| 91.5% | 4 | `controllers/oauth_applications_controller.rb` | 🟢 |
+| 89.5% | 2 | `uploaders/image_uploader.rb` | 🟢 |
+| 94.5% | 3 | `controllers/okrs_controller.rb` | 🟢 |
+| 95.7% | 1 | `controllers/home_controller.rb` | 🟢 |
 
-Auth / permissions / OAuth surfaces first (devise + doorkeeper + omniauth + cancancan are all
-present), then churn, then fan-in. These are the **near-100% hotspots** the gate demands.
+## 3. What drives the gap (and it is concentrated)
 
-**Tier 0 — HOTSPOTS, must reach near-100% (auth / permissions / OAuth):**
-1. `app/models/ability.rb` — **CanCan RBAC**, admin/manager/employee branching, block-based
-   rules over `project_ids`/`team_ids`/`user_ids`. Highest permission blast radius. **No test
-   file at all.** churn 15.
-2. `app/models/user.rb` — devise (`database_authenticatable`, `omniauthable`,
-   google_oauth2 + fluxapp), `admin?/manager?/employee?` role predicates that drive Ability,
-   role scopes. churn 31 (2nd-highest in repo). High fan-in.
-3. `app/controllers/users/omniauth_callbacks_controller.rb` — OAuth login callback (Google +
-   fluxapp). Untested. Auth entry point.
-4. `app/controllers/api/v1/credentials_controller.rb` + `api_controller.rb` — doorkeeper-guarded
-   API. Untested.
-5. `app/models/doorkeeper_application.rb`, `oauth_application.rb`, `user_oauth_application.rb`,
-   `oauth_applications_controller.rb` — OAuth-server surface (doorkeeper 1.1, itself slated for
-   a 1.1→5.x migration in Roadmap Task 10). Pin current behavior before that migration.
+Two files are **55% of the entire miss** (251/459): `reports_controller` (170) and
+`users_controller` (81). The auth cluster (`users_controller` + `omniauth_callbacks` + fluxapp
+strategy + `api_controller` + `credentials_controller`) is **146 missing lines, almost all at
+literally 0%** — the coverage is not thin there, it is *absent*. That is the whole reason the
+headline % looks healthier than the app actually is.
 
-**Tier 1 — high churn / high fan-in core domain:**
-6. `app/controllers/reports_controller.rb` — **highest-churn controller (43)**, reporting logic.
-7. `app/controllers/tasks_controller.rb` (churn 27) + `app/models/task.rb` (churn 24).
-8. `app/models/team.rb` (15) + `teams_controller.rb` (18); `work_logs_controller.rb` (16).
-9. OKR cluster: `okr.rb`, `objective.rb`, `key_result.rb` + their controllers (core product).
+## 4. Risk-ranked backfill (highest blast radius first)
 
-**Tier 2 — remaining CRUD controllers & models to top up to 60%:** projects, comments,
-calendar, home, users_controller; join models (task_assignee, task_key_result, project_manager,
-reporting_manager, team_member).
+**Tier 0 — HOTSPOTS at 0%, must reach near-100% before any auth/OAuth upgrade work:**
+1. `users_controller.rb` (0%, 81 lines) — **highest single untested risk.** `load_and_authorize_resource`,
+   `create`/`update`/`destroy`, **`change_password`**, and `user_params` permitting `:role`,
+   `:password`, `manager_ids`. Both a **permission** and a **password/role** surface. Churn 14.
+2. `users/omniauth_callbacks_controller.rb` (0%) + `lib/omniauth/strategies/fluxapp.rb` (0%) —
+   Google + fluxapp **login entry points**. Needs an OmniAuth mock harness (one-time, small).
+3. `api/v1/credentials_controller.rb` (0%) + `api/v1/api_controller.rb` (0%) — Doorkeeper-gated
+   API. `current_resource_owner` resolves token→user; `credentials_controller` carries an inline
+   comment that a **pre-3.0 Doorkeeper API call `doorkeeper_for :all` was *silently never caught*
+   because nothing tests this path** — a concrete instance of an untested auth surface having
+   already hidden a regression. Pin current behavior before the doorkeeper 1.1→5.x migration.
+4. `user.rb` (89.7%, 8 lines) — top up the last role/predicate branches to near-100%.
 
-**Tier 3 — low value, low risk:** 13 helpers (mostly trivial view helpers), `lib/time_to_diff.rb`.
-`lib/omniauth/strategies/fluxapp.rb` is fiddly but low-churn — pin lightly.
+**Tier 1 — high-churn / date-duration logic:**
+5. `reports_controller.rb` (63%, 170 miss, churn 46 — highest in repo). Bespoke date-range and
+   **worklog duration aggregation** (`sum(&:minutes).to_duration`, `beginning_of_month`/
+   `end_of_day` boundaries) — the app's closest thing to "money" math (billable hours). Won't
+   reach 100% cheaply, but the date-boundary and hour-total branches are worth characterization.
+6. `lib/time_to_diff.rb` (67.9%) — the `to_duration` helper the reports lean on; small, pin it.
 
-## 4. Gap size & dual estimate
+**Tier 2 — core OKR CRUD top-ups:** `objectives_controller` (34%), `key_results_controller`
+(36%), `work_logs_controller` (80%), `teams_controller` (81%), `comments_controller` (71%).
 
-- **Distance to gate:** from **~0% asserting → ≥60% line** + Tier-0 hotspots near-100%.
-  Essentially a **from-scratch backfill of ~50 units**, not a top-up of a partial suite.
-- **Prerequisites (one-time, before any test goes green):**
-  - App must boot first — **Roadmap Task 0** is a hard dependency; this estimate assumes it.
-  - Build a **sign-in test helper** (Devise `sign_in` / integration login) — without it every
-    controller test is red.
-  - **Rebuild fixtures** with valid data (current ones are `MyString` placeholders).
-- **Strategy:** lead with **controller functional/integration tests** — they cascade coverage
-  through models + helpers + views in one pass, so ~10–12 good ones plus targeted Ability/User
-  unit tests realistically clear 60% on an app this small. Do **not** chase all 13 helpers.
+**Tier 3 — low value:** `application_helper` (73%), `image_uploader`, and the last 1–6 lines on
+already-green controllers.
 
-**Best / worst engineer-days: `5 / 12`** (heuristic ~0.25 day thin unit → ~0.75 day hotspot;
-static estimates are wide and tighten to ±20% once the app boots and real per-file SimpleCov
-lands). Breakdown: prereqs (sign-in helper + fixtures) 0.5–1 · 12 controller tests 3.5–6 ·
-Ability+User hotspots 1–1.5 · doorkeeper/omniauth/api auth 1–1.5 · model top-ups 1–2 · lib 0.5.
+## 5. Gap size & dual estimate (toward 80% overall + hotspots near-100%)
 
-## 5. Reconciliation with Roadmap §7 Task 1 (best 4 / worst 9)
+- **≥60% floor:** already cleared (70.86%). No work needed for the hard gate.
+- **To 80% overall:** +144 covered lines (1116 → 1260). The auth cluster alone is 146 lines —
+  **the hotspot backfill and the path to 80% are essentially the same work**: pin
+  `users_controller` (+81), `omniauth_callbacks` (+21), `credentials` (+15), `api_controller`
+  (+7), plus `objectives`/`key_results` top-ups and `user.rb`'s last 8 → clears 80% *and* takes
+  the auth hotspots from 0% to near-100%.
+- **Prereqs:** **none** — the sign-in harness and real fixtures already exist (the expensive
+  one-time cost the STATIC pass budgeted). New: a small **OmniAuth mock** (Tier-0 #2) and a
+  **Doorkeeper token** setup (Tier-0 #3) — fiddly but each ~0.25 day, one-time.
 
-**REVISE — up, and qualitatively.** The roadmap's Task 1 ("add SimpleCov, run suite, backfill
-to ≥60%") implicitly assumed the existing suite is a *partial baseline*. This audit finds it is
-**scaffold-only — ~0% asserting coverage** — and that the controller tests are **auth-broken
-and fixture-broken**, needing a sign-in harness and rebuilt fixtures before *any* of them can
-go green. That raises both ends:
+**Best / worst engineer-days: `3.5 / 7`** (runtime estimate, tighter than the STATIC ±wide
+range now that real per-file % is known). Breakdown:
+- `users_controller` (roles + change_password) — 0.75 / 1.25
+- OAuth callbacks + fluxapp strategy (+ OmniAuth mock) — 0.5 / 1.25
+- Doorkeeper API pair (+ token harness) — 0.5 / 1.0
+- `reports_controller` meaningful date/duration branches — 1.0 / 2.0
+- `objectives`/`key_results`/`work_logs`/`teams`/`comments` top-ups — 0.5 / 1.0
+- `user.rb` + `time_to_diff` + trailing 1-liners — 0.25 / 0.5
 
-- **Best: 4 → 5** (the free "existing tests already cover some %" assumption is false).
-- **Worst: 9 → 12** (prereq harness + fixture rebuild + genuinely from-scratch hotspots).
+Reaching **full** near-100% on `reports_controller` (all 170 lines) would add ~1–2 days beyond
+this; not required for the 80% target and lower marginal safety value than the auth cluster.
 
-The most important correction is **qualitative, not the number**: Task 1's starting point is a
-green-field, not a top-up. Recommend re-labeling Task 1 as *"Coverage gate: build sign-in
-harness + fixtures, then backfill characterization tests from ~0% → ≥60% (auth/RBAC first)"*
-and setting **5 / 12**.
+## 6. Reconciliation with Roadmap §7 Task 1
 
-## 6. Phase B (NOT run this pass)
+**Revise DOWN and re-scope.** The prior STATIC pass set Task 1 at **5 / 12** on the assumption of
+a from-scratch backfill including a sign-in harness + fixture rebuild from ~0%. Both prereqs are
+now done and the suite is at 70.86% real coverage. Recommend:
+
+- **Retarget Task 1** from "backfill to ≥60%" (already met) to **"pin the 0% auth/OAuth/API
+  hotspots to near-100% and lift overall to ≥80%."**
+- **New estimate: 3.5 / 7 eng-days** (down from 5/12).
+- Keep it a **hard predecessor of the Doorkeeper 1.1→5.x migration** (Roadmap Task 10) rather
+  than of the first Rails bump — the floor no longer blocks the bump, but the untested auth
+  surface blocks the auth-gem work specifically.
+
+## 7. Phase B (NOT run this pass)
 
 Writing the tests is Phase B — **requires explicit user go-ahead** and uses the `tdd` skill.
-Characterization tests must **pin current behavior** (bugs included) — do not "fix" the Ability
-rules or role logic while backfilling. Re-measure after each batch. Given the stakes on
-`ability.rb` and `user.rb`, confirm those hotspot tests with a **mutant** run once green.
+Characterization tests must **pin current behavior** (bugs included — e.g. whatever
+`credentials_controller` actually returns today) — do not "fix" role logic, the OAuth callbacks,
+or the reports duration math while backfilling. Re-measure after each batch. Given the stakes,
+confirm the `users_controller`, `ability.rb`, and Doorkeeper-API tests with a **`mutant --use
+minitest`** run once green — `ability.rb` reads 100% covered but coverage is not catch-rate, and
+a permission file is exactly where a surviving mutant matters most.
 
 ---
 
-*Phase A read-only. No SimpleCov was installed and `test_helper.rb` was not modified — the tree
-is clean. Real line coverage remains `PENDING(env)` until Roadmap Task 0 (boot) lands; re-run
-this gate in RUNTIME mode immediately after boot to replace the 0% proxy with true per-file %.*
+*Phase A read-only. SimpleCov was already installed and configured (no test-helper changes made
+this pass); the tree is clean apart from this deliverable. Real per-file line coverage is now the
+source of truth — re-run this gate after each Phase B batch and after any auth-gem migration.*

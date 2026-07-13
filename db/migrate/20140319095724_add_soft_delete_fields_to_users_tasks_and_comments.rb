@@ -1,4 +1,4 @@
-class AddSoftDeleteFieldsToUsersTasksAndComments < ActiveRecord::Migration
+class AddSoftDeleteFieldsToUsersTasksAndComments < ActiveRecord::Migration[4.2]
   def change
     add_column :users, :is_deleted, :boolean, :default=>false
     add_column :tasks, :is_deleted, :boolean, :default=>false

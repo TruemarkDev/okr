@@ -1,4 +1,4 @@
-class CreateReportingManagers < ActiveRecord::Migration
+class CreateReportingManagers < ActiveRecord::Migration[4.2]
   def change
     create_table :reporting_managers do |t|
       t.integer :user_id

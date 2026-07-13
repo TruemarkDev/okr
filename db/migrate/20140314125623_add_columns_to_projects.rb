@@ -1,4 +1,4 @@
-class AddColumnsToProjects < ActiveRecord::Migration
+class AddColumnsToProjects < ActiveRecord::Migration[4.2]
   def change
     add_column :projects, :team_count, :integer, :default=>0
     add_column :projects, :member_count, :integer, :default=>0

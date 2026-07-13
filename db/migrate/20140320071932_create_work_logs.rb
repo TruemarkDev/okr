@@ -1,4 +1,4 @@
-class CreateWorkLogs < ActiveRecord::Migration
+class CreateWorkLogs < ActiveRecord::Migration[4.2]
   def change
     create_table :work_logs do |t|
       t.integer :user_id

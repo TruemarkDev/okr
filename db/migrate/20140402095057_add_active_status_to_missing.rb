@@ -1,4 +1,4 @@
-class AddActiveStatusToMissing < ActiveRecord::Migration
+class AddActiveStatusToMissing < ActiveRecord::Migration[4.2]
   def change
     add_column  :reporting_managers, :status, :string, :default=>'active'
     add_column  :task_assignees, :status, :string, :default=>'active'

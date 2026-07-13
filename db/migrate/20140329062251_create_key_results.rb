@@ -1,4 +1,4 @@
-class CreateKeyResults < ActiveRecord::Migration
+class CreateKeyResults < ActiveRecord::Migration[4.2]
   def change
     create_table :key_results do |t|
       t.text :name

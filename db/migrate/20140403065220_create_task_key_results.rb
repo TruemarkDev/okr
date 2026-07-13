@@ -1,4 +1,4 @@
-class CreateTaskKeyResults < ActiveRecord::Migration
+class CreateTaskKeyResults < ActiveRecord::Migration[4.2]
   def change
     create_table :task_key_results do |t|
       t.integer :task_id
