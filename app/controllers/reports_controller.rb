@@ -637,11 +637,4 @@ class ReportsController < ApplicationController
   end
 
 
-  protected
-
-  def redirect_for_unauthorized(users, user)
-    unless users.include?(users)
-      redirect_to root_path, :alert => 'Unauthorized access'
-    end
-  end
 end
