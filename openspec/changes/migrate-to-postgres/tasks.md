@@ -37,8 +37,8 @@
 
 ## 6. Data migration path
 
-- [ ] 6.1 Write `doc/mysql-to-postgres-data-migration.md`: pgloader procedure with Rails-authoritative schema (`db:schema:load` first, then pgloader `data only, truncate, reset sequences`), including the sequence-audit and row-count/boolean spot-check queries
-- [ ] 6.2 Verify the procedure against a copy of the local MySQL fluxday database: row counts match, `is_deleted` flags intact, post-load INSERT succeeds without sequence collision
+- [x] 6.1 Write `doc/mysql-to-postgres-data-migration.md`: pgloader procedure with Rails-authoritative schema (`db:schema:load` first, then pgloader `data only, truncate, reset sequences`), including the sequence-audit and row-count/boolean spot-check queries
+- [x] 6.2 Verify the procedure against a copy of the local MySQL fluxday database: row counts match, `is_deleted` flags intact, post-load INSERT succeeds without sequence collision
 
 ## 7. Documentation and cleanup
 
