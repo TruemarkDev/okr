@@ -8,8 +8,9 @@ assertions — so this pass replaces the proxy with true per-file line %.
 **Date:** 2026-07-13 · **Depth:** Phase A (read-only) audit + **Phase B auth-surface backfill
 executed** (see §7) · deep version of Roadmap §6 gate.
 **Measurement:** `rake test` with `DB_NAME=fluxday DB_HOST=127.0.0.1 DB_USER=root DB_PASS=""`,
-SimpleCov `command_name "Minitest"`. Overall **70.86% → 78.95%** after Phase B (§1–§6 below
-describe the pre-Phase-B state; §7 records the backfill).
+SimpleCov `command_name "Minitest"`. Overall **70.86% → 88.52%** after Phase B (§1–§6 below
+describe the pre-Phase-B state; §7 records the auth-surface backfill, §8 the `reports_controller`
+hardening).
 
 ---
 
@@ -210,9 +211,43 @@ to the user rather than filing).
   `ability.rb` — recommended before the Doorkeeper bump to confirm the new net actually catches a
   behavior change (a 100%-covered auth path is not the same as a mutation-resistant one).
 
+## 8. Phase B — `reports_controller` hardening (EXECUTED 2026-07-13)
+
+Discretionary broad hardening of the largest remaining gap (per coordinator). Extended the
+existing `test/controllers/reports_controller_test.rb` (no duplication) with report_type
+branches, the worklogs `detailed` per-user/per-day grouping, employee-role `@opts` branches, and
+CSV/XLS export paths across every action. Pin-current-behavior only. Full suite after: **403 runs,
+0 failures, 0 errors, 16 skips.** Overall **78.95% → 88.52%**; `reports_controller.rb`
+**63.0% → 94.8% (290/460 → 436/460)**.
+
+Remaining ~24 uncovered lines are low-value: duplicate `format.xls` render blocks (identical
+`MissingTemplate` raise, already characterized generically), a few CSV `@fields` tail lines inside
+loops with no in-range fixture data, and the **dead protected method `redirect_for_unauthorized`
+(lines 642-644)** — never wired to a route; note as dead code.
+
+### 🔴 Three current-behavior bugs surfaced (all pinned as characterization tests + flagged for bd)
+
+1. **Every CSV/XLS export returns HTTP 500.** All report actions do
+   `render "reports/csv_report.csv.erb"` / `"...excel_report.xls.erb"` / `"...worklog_detailed.xls.erb"`
+   — passing a filename with an embedded `.csv.erb`/`.xls.erb` to `render`, which no longer
+   resolves under Rails 8's template lookup (confirmed 500 through the full HTTP stack). The
+   template files themselves exist. **Fix:** `render template: "reports/csv_report", formats: :csv`.
+2. **`assignments` 500s on a nil-minutes worklog.** Line 613 sums minutes with Ruby
+   `Array#sum(&:minutes)` and **no `.to_i`** (unlike every other action) — an in-range task whose
+   worklog has nil minutes raises `TypeError: nil can't be coerced into Integer`, format-independent
+   (`assignments` builds `@fields` unconditionally). **Fix:** `sum { |l| l.minutes.to_i }`.
+3. **Dead protected method** `redirect_for_unauthorized` (lines 642-646) — unreferenced; also its
+   body `unless users.include?(users)` compares the array to itself (always false). Safe to delete.
+
+Each is pinned with an `assert_raises` characterization test and a `# 🔴 BUG PINNED` comment
+directing the flip to green once fixed. **These are the three bd issues to file** (`bd create`
+is broken in this checkout per CLAUDE.md — flagged for the user to file manually). None of them is
+in the Doorkeeper blast radius; they are export/reporting defects (candidate for their own bead).
+
 ---
 
-*Phase A was read-only. Phase B added four test files under `test/` and did not modify any
-`app/`, `lib/`, or config code — the characterization tests pin current behavior (500s included)
-without fixing it. Re-run this gate after the Doorkeeper migration to replace the pinned-bug
-expectations with 401/200.*
+*Phase A was read-only. Phase B (two passes) added five test files / extended one under `test/`
+and did not modify any `app/`, `lib/`, or config code — the characterization tests pin current
+behavior (500s / TypeErrors included) without fixing it. Re-run this gate after the Doorkeeper
+migration and after the CSV/XLS + assignments fixes to replace the pinned-bug expectations with
+success assertions.*
